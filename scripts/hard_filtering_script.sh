@@ -28,6 +28,7 @@ for file in ${data_directory}/*.vcf; do
   gatk SelectVariants -V $file -select-type INDEL -select-type MIXED -O Indels/indels_${file##*/} 2>>Indels/indels_error;
 
   current_vcf=$(($current_vcf+1))
+  progressBar $current_vcf $total_vcf
 done
 
 # Filter SNVs using the values sugested by the GATK best practices. With the exception of SOR, which we use > 4.0 instead of 3.0. Save the results in a new directory.
@@ -52,7 +53,9 @@ for file in SNVs/snvs_*.vcf; do
   -O FilteredSNVs/filtered_${file##*/} 2>>FilteredSNVs/snvs_filter_error;
 
   current_vcf=$(($current_vcf+1))
+  progressBar $current_vcf $total_vcf
  done
+
 
 # Filter Indels using the values sugested by the GATK best practices. Save the results in a new directory.
 printf "Filtering indels\n"
@@ -74,6 +77,7 @@ for file in Indels/indels_*.vcf; do
   -O FilteredIndels/filtered_${file##*/} 2>>FilteredIndels/indels_filter_error;
 
   current_vcf=$(($current_vcf+1))
+  progressBar $current_vcf $total_vcf
 done
 
 # Merge the Indels and SNVs together and store it in a new directory.
@@ -88,7 +92,8 @@ mkdir Merged
 for file in FilteredIndels/*.vcf; do
   progressBar $current_vcf $total_vcf
 
-  fname=${file#*indels_}; gatk MergeVcfs -I $file -I FilteredSNVs/filtered_snvs_$fname -O Merged/filtered_$fname 2>>Merged/merge_error;
+  fname=${file#*indels_}; gatk MergeVcfs -I $file -I FilteredSNVs/filtered_snvs_$fname -O Merged/filtered_$fname 1>> exit_code 2>>Merged/merge_error;
   
   current_vcf=$(($current_vcf+1))
+  progressBar $current_vcf $total_vcf
 done

@@ -22,8 +22,6 @@ for file in ${root_directory}/2_FlankingSequences/*.vcf
 do
     progressBar $current_vcf $total_vcf
 
-    perl -X
-
     vep -i $file -o ${root_directory}/3_BaseAnnotation/$(basename "$file" .vcf)_VEP.vcf \
     --cache \
     --vcf \
@@ -39,7 +37,9 @@ do
     --custom ${resources_directory}/All_hg19_RS.bw,GERP,bigwig,exact \
     --custom ${resources_directory}/hg19.100way.phyloP100way.bw,PhyloP,bigwig,exact \
     --fields "Feature","Existing_variation","STRAND","EXON","INTRON","Consequence","Codons","AF","EUR_AF","SweGen_AF","gnomAD_AF","gnomAD_NFE_AF","PhyloP","GERP", \
-    --no_stats
+    --no_stats 1>>${root_directory}/3_BaseAnnotation/vep.log 2>>${root_directory}/3_BaseAnnotation/vep.error
 
     current_vcf=$(($current_vcf+1))
- done
+    
+    progressBar $current_vcf $total_vcf
+done

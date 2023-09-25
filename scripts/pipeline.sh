@@ -58,54 +58,58 @@ printf "Project resources directory: ${resources_directory}\n\n"
 
 padding="------------------------------------------------------"
 
-case "${start_flag}" in
-    1)
-        text="Filtering raw data"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+while [[ ${start_flag} -lt 9 ]]
+do
+	case "${start_flag}" in
+	    1)
+		text="Filtering raw data"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/hard_filtering_script.sh ${data_directory} ${root_directory}
-    ;;
-    2)
-        text="Retrieving flanking sequences"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/hard_filtering_script.sh ${data_directory} ${root_directory}
+	    ;;
+	    2)
+		text="Retrieving flanking sequences"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/flanking_sequences.sh ${root_directory} ${resources_directory}
-    ;;
-    3)
-        text="Creating base annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/flanking_sequences.sh ${root_directory} ${resources_directory}
+	    ;;
+	    3)
+		text="Creating base annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/annotation_script.sh ${root_directory} ${resources_directory}
-    ;;
-    4)
-        text="Adding ENCODE RBS annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/annotation_script.sh ${root_directory} ${resources_directory}
+	    ;;
+	    4)
+		text="Adding ENCODE RBS annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/rna_binding_annotation.sh ${root_directory} ${resources_directory}
-    ;;
-    5)
-        text="Adding gene name annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/rna_binding_annotation.sh ${root_directory} ${resources_directory}
+	    ;;
+	    5)
+		text="Adding gene name annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/gene_name_annotation.sh ${root_directory}
-    ;;
-    6)
-        text="Adding miRNA target site annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/gene_name_annotation.sh ${root_directory}
+	    ;;
+	    6)
+		text="Adding miRNA target site annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        bash ${root_directory}/scripts/miRNA_target_site_annotation.sh ${root_directory} ${resources_directory}
-    ;;
-    7)
-        text="Adding ESE/ESS, RSCU annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		bash ${root_directory}/scripts/miRNA_target_site_annotation.sh ${root_directory} ${resources_directory}
+	    ;;
+	    7)
+		text="Adding ESE/ESS, RSCU annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        python3 ${root_directory}/scripts/custom_annotation.py ${data_directory} ${root_directory} ${resources_directory}
-    ;;
-    8)
-        text="Adding ClinVar annotations"
-        printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
+		python3 ${root_directory}/scripts/custom_annotation.py 6_TargetScanAnnotation/ ${root_directory} ${resources_directory}
+	    ;;
+	    8)
+		text="Adding ClinVar annotations"
+		printf "%s %s %s\n" "${padding:${#text}}" "$text" "${padding:${#text}}"
 
-        python3 ${root_directory}/scripts/clinvar.py ${root_directory} ${resources_directory}
-    ;;
-esac
+		python3 ${root_directory}/scripts/clinvar.py ${root_directory} ${resources_directory}
+	    ;;
+	esac
+	start_flag=$(($start_flag+1))
+done
 printf "Pipeline complete.\n"

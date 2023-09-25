@@ -13,8 +13,6 @@ for f in ${root_directory}/5_GeneNameAnnotation/*.vcf;
 do
     progressBar $current_vcf $total_vcf
 
-    perl -X
-
     vep -i $f -o ${root_directory}/6_TargetScanAnnotation/targetscan_$(basename "$f") \
     --vcf \
     --offline \
@@ -25,7 +23,8 @@ do
     --fields "Feature","TargetScan" \
     --keep_csq \
     --vcf_info_field TargetScan \
-    --no_stats;
+    --no_stats 1>>${root_directory}/6_TargetScanAnnotation/vep.log 2>>${root_directory}/6_TargetScanAnnotation/vep.error
 
     current_vcf=$(($current_vcf+1))
+    progressBar $current_vcf $total_vcf
 done

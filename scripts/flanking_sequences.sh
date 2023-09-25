@@ -19,4 +19,5 @@ do
     fill-fs -r ~/.vep/homo_sapiens/110_GRCh37/Homo_sapiens.GRCh37.dna.primary_assembly.fa.gz -l 15 $file > ${root_directory}/2_FlankingSequences/fs_$(basename "$file");
 
     current_vcf=$(($current_vcf+1))
+    progressBar $current_vcf $total_vcf
 done
