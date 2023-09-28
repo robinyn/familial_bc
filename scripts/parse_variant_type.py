@@ -5,6 +5,7 @@
 # Description: A script to parse annotations from SWEA/BRIDGES annotation pipeline V2
 
 import argparse
+import tqdm
 
 def init_args():
     parser = argparse.ArgumentParser(prog = "SWEA/BRIDGES annotation parser", \
@@ -29,7 +30,7 @@ def parse_variant(input_file, output_dir):
 
     try:
         with open(input_file, "r") as input_table:
-            for line in input_table:
+            for line in tqdm(input_table):
                 line = line.strip().split("\t")
                 genes_at_position = set()
                 variant_types_at_position = set()
