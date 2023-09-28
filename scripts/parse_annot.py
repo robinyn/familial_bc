@@ -23,13 +23,13 @@ def init_args():
     return input_dir, output_file
 
 def parse_vcf(input_dir, output_file):
-    header=("sample_name\tchromosome\tposition\tvariant_id\tref_allele\talt_allele\tquality\tfilter\tAC\tAF"
+    header=("#sample_name\tchromosome\tposition\tvariant_id\tref_allele\talt_allele\tquality\tfilter\tAC\tAF"
     "\tAN\tBaseQRankSum\tClippingRankSum\tDP\tExcessHet\tFS\tMLEAC\tMLEAF"
     "\tMQ\tMQRankSum\tNDA\tQD\tReadPosRankSum\tSOR\tFSEQ\tCSQ\tClinVar\tformat\tadd_info\n")
 
     annot_dict={}
 
-    for item in header.removesuffix("\n").split("\t"):
+    for item in header.removeprefix("#").removesuffix("\n").split("\t"):
         annot_dict[item]="NA"
 
     try:
