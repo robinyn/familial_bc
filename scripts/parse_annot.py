@@ -7,7 +7,6 @@
 import argparse
 import os
 import re
-import tqdm
 
 def init_args():
     parser = argparse.ArgumentParser(prog = "SWEA/BRIDGES annotation parser", \
@@ -43,7 +42,8 @@ def parse_vcf(input_dir, output_file):
 
         with open(output_file, "w") as output_tsv:
             output_tsv.write(header)
-            for file in tqdm(files_list):
+            for index, file in enumerate(files_list):
+                print("\rProcessing {} ({}/{})\n".format(file, index, len(files_list)))
                 with open("{dir}/{name}".format(dir=input_dir, name=file), "r") as input_vcf:
                     for line in input_vcf:
                         # Disregard metadata/header lines
