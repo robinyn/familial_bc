@@ -30,6 +30,7 @@ def parse_variant(input_file, output_dir):
     try:
         with open(input_file, "r") as input_table:
             for index, line in enumerate(input_table):
+                print(end="\r")
                 print("Processing line {}".format(index),end="\r")
                 line = line.strip().split("\t")
                 genes_at_position = set()
