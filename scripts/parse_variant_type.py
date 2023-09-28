@@ -30,7 +30,7 @@ def parse_variant(input_file, output_dir):
     try:
         with open(input_file, "r") as input_table:
             for index, line in enumerate(input_table):
-                print("\rProcessing line {}".format(index))
+                print("Processing line {}".format(index),end="\r")
                 line = line.strip().split("\t")
                 genes_at_position = set()
                 variant_types_at_position = set()
@@ -80,7 +80,7 @@ def parse_variant(input_file, output_dir):
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
                     variant_dict[variant]=[known, "|".join(genes_at_position), "|".join(variant_types_at_position), global_allele_freq, eur_allele_freq, swe_allele_freq, sample_name]
-
+        print()
         per_variant_summary_file = "{}/per_variant_summary.tsv".format(output_dir)
         filter_summary_file ="{}/filter_summary.tsv".format(output_dir)
 
