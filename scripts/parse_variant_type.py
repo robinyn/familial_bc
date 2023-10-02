@@ -31,10 +31,11 @@ def parse_variant(input_file, output_dir):
         with open(input_file, "r") as input_table:
             for index, line in enumerate(input_table):
                 print(end="\r")
-                print("Processing line {}".format(index),end="\r")
+                print("Processing line {}".format(index+1),end="\r")
                 line = line.strip().split("\t")
                 genes_at_position = set()
                 variant_types_at_position = set()
+                miRNA_target_at_position = set()
 
                 # Disregard header line
                 if line[0].startswith("#"):
@@ -76,6 +77,20 @@ def parse_variant(input_file, output_dir):
 
                     for type in transcript[6].split("&"):
                         variant_types_at_position.add(type)
+
+                    if len(transcript) != 15:
+                        print()
+                        print(line)
+                        print()
+                        print(transcript)
+
+
+                    # if transcript[14] != "":
+                    #     for i, targetscan in enumerate(transcript[14].split("&")):
+                    #         if i == 0:
+                    #             miRNA_target_at_position.add(":".join(targetscan.split(":")[0:3]))
+                    #         else:
+                    #             miRNA_target_at_position.add(":".join(targetscan.split(":")[1:4]))
 
                 if variant in variant_dict:
                     variant_dict[variant][-1]+="|{}".format(sample_name)
