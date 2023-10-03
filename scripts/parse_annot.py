@@ -43,7 +43,7 @@ def parse_vcf(input_dir, output_file):
         with open(output_file, "w") as output_tsv:
             output_tsv.write(header)
             for index, file in enumerate(files_list):
-                print("Processing {} ({}/{})".format(file, index+1, len(files_list)), end="\r", flush=True)
+                print("Processing {} ({}/{})".format(file, index+1, len(files_list)))
                 with open("{dir}/{name}".format(dir=input_dir, name=file), "r") as input_vcf:
                     for line in input_vcf:
                         # Disregard metadata/header lines
