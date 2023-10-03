@@ -78,30 +78,24 @@ def parse_variant(input_file, output_dir):
                     for type in transcript[6].split("&"):
                         variant_types_at_position.add(type)
 
-                    if len(transcript) != 15:
-                        print()
-                        print(line)
-                        print()
-                        print(transcript)
-
-
-                    # if transcript[14] != "":
-                    #     for i, targetscan in enumerate(transcript[14].split("&")):
-                    #         if i == 0:
-                    #             miRNA_target_at_position.add(":".join(targetscan.split(":")[0:3]))
-                    #         else:
-                    #             miRNA_target_at_position.add(":".join(targetscan.split(":")[1:4]))
+                    if transcript[14] != "":
+                        for i, targetscan in enumerate(transcript[14].split("&")):
+                            if i == 0:
+                                miRNA_target_at_position.add(":".join(targetscan.split(":")[0:3]))
+                            else:
+                                miRNA_target_at_position.add(":".join(targetscan.split(":")[1:4]))
 
                 if variant in variant_dict:
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
-                    variant_dict[variant]=[known, "|".join(genes_at_position), "|".join(variant_types_at_position), global_allele_freq, eur_allele_freq, swe_allele_freq, sample_name]
+                    variant_dict[variant]=[known, "|".join(genes_at_position), "|".join(variant_types_at_position),
+                                           global_allele_freq, eur_allele_freq, swe_allele_freq, "|".join(miRNA_target_at_position), sample_name]
         print()
         per_variant_summary_file = "{}/per_variant_summary.tsv".format(output_dir)
         filter_summary_file ="{}/filter_summary.tsv".format(output_dir)
 
         with open(per_variant_summary_file, "w") as outfile:
-            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tsamples\n")
+            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tmiRNA\tsamples\n")
             for var in variant_dict.keys():
                 outfile.write("{}\t{}\n".format(var, "\t".join(variant_dict[var])))
 

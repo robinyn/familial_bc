@@ -72,10 +72,17 @@ def parse_vcf(input_dir, output_file):
                         if parsed_info[-1][0]=="ClinVar":
                             parsed_info.pop(-1)
 
+                        if parsed_info[-1][0]=="CSQ":
+                            parsed_info.pop(-1)
+
                         clinvar = re.findall(r"(ClinVar)=(\S+)", info)
+                        csq = re.findall(r"(CSQ)=(\S+?)(?:;ClinVar|$)", info)
 
                         if clinvar:
                             parsed_info.append(clinvar[0])
+
+                        if csq:
+                            parsed_info.append(csq[0])
 
                         for item in parsed_info:
                             annot_dict[item[0]]=item[1]
