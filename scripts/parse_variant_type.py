@@ -59,6 +59,8 @@ def parse_variant(input_file, output_dir):
                 fixed_csq = line[25].split(",")[0].split("|")
                 variable_csq = line[25].split(",")[1:]
 
+                clinvar = line[26]
+
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
 
@@ -88,13 +90,13 @@ def parse_variant(input_file, output_dir):
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
                     variant_dict[variant]=[known, "|".join(genes_at_position), "|".join(variant_types_at_position),
-                                           global_allele_freq, eur_allele_freq, swe_allele_freq, "|".join(miRNA_target_at_position), sample_name]
+                                           global_allele_freq, eur_allele_freq, swe_allele_freq, "|".join(miRNA_target_at_position), clinvar, sample_name]
         print()
         per_variant_summary_file = "{}/per_variant_summary.tsv".format(output_dir)
         filter_summary_file ="{}/filter_summary.tsv".format(output_dir)
 
         with open(per_variant_summary_file, "w") as outfile:
-            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tmiRNA\tsamples\n")
+            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tmiRNA\tClinVar\tsamples\n")
             for var in variant_dict.keys():
                 outfile.write("{}\t{}\n".format(var, "\t".join(variant_dict[var])))
 
