@@ -4,11 +4,11 @@
 
 # Get directories passed as arguments
 data_directory=$1
-root_directory=$2
+output_directory=$2
 
 # Create the new directories to store the results.
-mkdir ${root_directory}/1_Filtering
-cd ${root_directory}/1_Filtering
+mkdir ${output_directory}/1_Filtering
+cd ${output_directory}/1_Filtering
 mkdir SNVs
 mkdir Indels
 
@@ -21,7 +21,7 @@ current_vcf=0
 printf "${total_vcf} VCF files to process\n"
 
 for file in ${data_directory}/*.vcf; do
-  
+
   progressBar $current_vcf $total_vcf
 
   gatk SelectVariants -V $file -select-type SNP -O SNVs/snvs_${file##*/} 2>>SNVs/snvs_error;
@@ -93,7 +93,7 @@ for file in FilteredIndels/*.vcf; do
   progressBar $current_vcf $total_vcf
 
   fname=${file#*indels_}; gatk MergeVcfs -I $file -I FilteredSNVs/filtered_snvs_$fname -O Merged/filtered_$fname 1>> exit_code 2>>Merged/merge_error;
-  
+
   current_vcf=$(($current_vcf+1))
   progressBar $current_vcf $total_vcf
 done

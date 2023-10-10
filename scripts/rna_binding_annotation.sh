@@ -1,20 +1,25 @@
 #!/bin/bash
 
-root_directory=$1
+output_directory=$1
 resources_directory=$2
 
-total_vcf=$(ls ${root_directory}/3_BaseAnnotation/*.vcf | wc -l)
+file_dir=${output_directory}/3_BaseAnnotation/
+
+total_vcf=$(find ${file_dir} -type f -name "*.vcf" | wc -l)
 current_vcf=0
 
 printf "${total_vcf} VCF files to process\n"
 
-mkdir ${root_directory}/4_EncodeRBSAnnotation
+mkdir ${output_directory}/4_EncodeRBSAnnotation
+rsync -a -f"+ */" -f"- *" ${file_dir} ${output_directory}/4_EncodeRBSAnnotation
 
-for f in ${root_directory}/3_BaseAnnotation/*.vcf;
+find ${file_dir} -type f -name "*.vcf" | while read file
 do
     progressBar $current_vcf $total_vcf
 
-    vep -i $f -o ${root_directory}/4_EncodeRBSAnnotation/encode_$(basename "$f") \
+    path_name=$(echo ${file%/*} | sed "s|3_BaseAnnotation|4_EncodeRBSAnnotation|")
+
+    vep -i $file -o ${path_name}/encode_$(basename "$file") \
     --vcf \
     --offline \
     --force \
@@ -24,7 +29,7 @@ do
     --fields "Feature","Encode" \
     --keep_csq \
     --vcf_info_field Encode \
-    --no_stats 1>>${root_directory}/4_EncodeRBSAnnotation/vep.log 2>>${root_directory}/4_EncodeRBSAnnotation/vep.error
+    --no_stats 1>>${output_directory}/4_EncodeRBSAnnotation/vep.log 2>>${output_directory}/4_EncodeRBSAnnotation/vep.error
 
     current_vcf=$(($current_vcf+1))
     progressBar $current_vcf $total_vcf

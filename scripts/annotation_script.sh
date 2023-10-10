@@ -4,25 +4,43 @@
 
 # REMEMBER to activate conda env e_vep.
 
-root_directory=$1
+output_directory=$1
 resources_directory=$2
+data_type=$3
+data_directory=$4
 
 # Annotate the files using VEP and store in a new directory.
 # Custom annotation to retrieve allele frequency from SweGen database.
 # Custom annotation for conservation values from PhyloP and GERP.
 printf "Generating base annotations\n"
 
-total_vcf=$(ls ${root_directory}/2_FlankingSequences/*.vcf| wc -l)
+if [[ ${data_type} == "swea" ]]
+then
+    file_dir=${output_directory}/2_FlankingSequences/
+else
+    file_dir=${data_directory}/
+fi
+
+total_vcf=$(find ${file_dir} -type f -name "*.vcf" | wc -l)
 current_vcf=0
 
 printf "${total_vcf} VCF files to process\n"
 
-mkdir ${root_directory}/3_BaseAnnotation
-for file in ${root_directory}/2_FlankingSequences/*.vcf
+mkdir ${output_directory}/3_BaseAnnotation
+rsync -a -f"+ */" -f"- *" ${file_dir} ${output_directory}/3_BaseAnnotation/
+
+find ${file_dir} -type f -name "*.vcf" | while read file
 do
     progressBar $current_vcf $total_vcf
 
-    vep -i $file -o ${root_directory}/3_BaseAnnotation/$(basename "$file" .vcf)_VEP.vcf \
+    if [[ ${data_type} == "swea" ]]
+    then
+        output_path=$(echo ${file%/*} | sed "s|2_FlankingSequences|3_BaseAnnotation|")
+    else
+        output_path=$(echo ${file%/*} | sed "s|${data_directory}|${output_directory}/3_BaseAnnotation|")
+    fi
+
+    vep -i $file -o ${output_path}/vep_$(basename "$file") \
     --cache \
     --vcf \
     --offline \
@@ -36,10 +54,10 @@ do
     --check_existing \
     --custom ${resources_directory}/All_hg19_RS.bw,GERP,bigwig,exact \
     --custom ${resources_directory}/hg19.100way.phyloP100way.bw,PhyloP,bigwig,exact \
-    --fields "Feature","Existing_variation","STRAND","EXON","INTRON","Consequence","Codons","AF","EUR_AF","SweGen_AF","gnomAD_AF","gnomAD_NFE_AF","PhyloP","GERP", \
-    --no_stats 1>>${root_directory}/3_BaseAnnotation/vep.log 2>>${root_directory}/3_BaseAnnotation/vep.error
+    --fields "Gene","SYMBOL","Feature","Existing_variation","STRAND","EXON","INTRON","Consequence","Codons","AF","EUR_AF","SweGen_AF","gnomAD_AF","gnomAD_NFE_AF","PhyloP","GERP", \
+    --no_stats 1>>${output_directory}/3_BaseAnnotation/vep.log 2>>${output_directory}/3_BaseAnnotation/vep.error
 
     current_vcf=$(($current_vcf+1))
-    
+
     progressBar $current_vcf $total_vcf
 done

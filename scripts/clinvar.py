@@ -11,30 +11,48 @@ Created on: 2021-12-10
 Author: Arthur Boffelli Castro
 
 GitHub: https://github.com/aboffelli/variant_annotation
+
+Updated on: 2023-10-10
+Author: Euisuk Robin Han
+
+Update notes:
+	- Added command-line arguments to allow the script to be included
+	  into the automated pipeline script.
+	- Modified to work with both SWEA and BRIDGES datasets
 """
 import os
 import time
 import sys
+import glob
+import re
 
-root_directory=sys.argv[1]
+output_directory=sys.argv[1]
 resources_directory=sys.argv[2]
+data_type=sys.argv[3]
 
 start_time = time.time()
 
 # Put all files in a list, removing anything that is not a vcf file.
-files_directory = r"{root}/7_CustomAnnotation/".format(root=root_directory)
-list_of_files = os.listdir(files_directory)
+files_directory = r"{root}/6_CustomAnnotation/".format(root=output_directory)
+list_of_files = glob.glob("{}/**/*.vcf".format(files_directory), recursive=True)
+
 for file in list_of_files.copy():
-    if '.vcf' not in file:
+    if '/custom' not in file:
         list_of_files.remove(file)
 
 # Initiate a dictionary to store the ClinVar file info.
 clinvar_dict = {}
 with open(r'{resources}/variant_summary_GRCh37.txt'.format(resources=resources_directory),
           'r') as variant:
+    print("Loading ClinVar info...")
     for line in variant:
         # Use the chromosome numbers as keys for a nested dictionary.
-        chrom = line.split('\t')[18]
+
+        if data_type=="swea":
+            chrom = line.split('\t')[18]
+        else:
+            chrom = 'chr' + line.split('\t')[18]
+
         position = line.split('\t')[31]
         if chrom not in clinvar_dict:
             clinvar_dict[chrom] = {}
@@ -43,6 +61,7 @@ with open(r'{resources}/variant_summary_GRCh37.txt'.format(resources=resources_d
             clinvar_dict[chrom][position] = {line}
         else:
             clinvar_dict[chrom][position].add(line)
+    print("Done.")
 
 # New line to add in the vcf header.
 new_info = ('##INFO=<ID=ClinVar,Number=.,Type=String,Description='
@@ -56,7 +75,7 @@ new_info = ('##INFO=<ID=ClinVar,Number=.,Type=String,Description='
             'TestedInGTR|OtherIDs|SubmitterCategories|VariationID|'
             'PositionVCF|ReferenceAlleleVCF|AlternateAlleleVCF">\n')
 
-directory = '{root}/8_ClinVarAnnotation/'.format(root=root_directory)
+directory = '{root}/7_ClinVarAnnotation/'.format(root=output_directory)
 if not os.path.exists(directory):
     os.makedirs(directory)
 
@@ -65,8 +84,10 @@ file_count = 1
 for file in list_of_files:
     print(f"{file_count}/{len(list_of_files)}", end='\r', flush=True)
 
-    with open(files_directory + file, 'r') as vcf, \
-            open('{root}/8_ClinVarAnnotation/clinvar_'.format(root=root_directory) + file, 'w') as outvcf:
+    new_file = re.sub(r'6_CustomAnnotation(\S*/)(custom)',
+                      r'7_ClinVarAnnotation\1clinvar_\2', file)
+
+    with open(file, 'r') as vcf, open(new_file, 'w') as outvcf:
         for vcf_line in vcf:
             # Non header lines
             if not vcf_line.startswith("#"):

@@ -47,7 +47,7 @@ def reverse_complement(sequence):
 	return rev_comp
 
 data_directory=sys.argv[1].strip().removesuffix("/")
-root_directory=sys.argv[2].strip().removesuffix("/")
+output_directory=sys.argv[2].strip().removesuffix("/")
 resources_directory=sys.argv[3].strip().removesuffix("/")
 
 # Path for both ESE and ESS hexamers list files.
@@ -64,7 +64,7 @@ for file in list_of_files.copy():
 		list_of_files.remove(file)
 
 # Create a new directory to store the output files if it does not exist.
-directory = '{root}/7_CustomAnnotation/'.format(root=root_directory)
+directory = '{root}/6_CustomAnnotation/'.format(root=output_directory)
 if not os.path.exists(directory):
 	os.makedirs(directory)
 
@@ -174,11 +174,8 @@ for file in list_of_files:
 				transcripts = re.search(r'CSQ=(\S+);Encode=',
 										line_info).group(1).split(',')
 				# Retrieve the Encode info between Encode and Gene.
-				encode_line = re.search(r'Encode=(\S+);Gene=',
+				encode_line = re.search(r'Encode=(\S+);TargetScan=',
 										line_info).group(1).split(',')
-				# Retrieve the gene name.
-				gene_name = re.search(r'Gene=(\S+);TargetScan=',
-									  line_info).group(1).split(',')
 				# Retrieve the TargetScan annotations
 				targetscan = re.search(r'TargetScan=(\S+)',
 									   line_info).group(1).split(',')
@@ -284,8 +281,6 @@ for file in list_of_files:
 					# Remove fixed info from the original csq.
 					csq.pop(1)
 					csq = csq[0:6]
-					# Add the gene name and symbol
-					csq.insert(0, gene_name[index])
 					# Append the new info to csq and join it together again.
 					csq.append(encode_info)
 					csq.append(str(delta_rscu))
