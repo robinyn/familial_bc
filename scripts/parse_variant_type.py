@@ -2,13 +2,13 @@
 # Version 1.0
 # Author: Euisuk Robin Han
 # Date: 28 Sept 2023
-# Description: A script to parse annotations from SWEA/BRIDGES annotation pipeline V2
+# Description: A script to re-format parsed annotations from SWEA/BRIDGES annotation pipeline V2
 
 import argparse
 
 def init_args():
     parser = argparse.ArgumentParser(prog = "SWEA/BRIDGES annotation parser", \
-                                     description="A script to parse annotations from SWEA/BRIDGES annotation pipeline V2")
+                                     description="A script to re-format parsed annotations from SWEA/BRIDGES annotation pipeline V2")
     parser.add_argument('-i', '--input', default=".", nargs="?", \
                         help="Directory and name of the input file (Default = ./input.tsv)")
     parser.add_argument('-o', '--output', default="./output/", nargs="?", \
