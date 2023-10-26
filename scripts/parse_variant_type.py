@@ -55,12 +55,14 @@ def parse_variant(input_file, output_dir):
                 position = line[2]
                 ref_allele = line[4]
                 alt_allele = line[5]
+                
+                print(sample_name, chromosome, position)
 
                 fixed_csq = line[25].split(",")[0].split("|")
                 variable_csq = line[25].split(",")[1:]
 
                 clinvar = line[26]
-
+                
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
 
@@ -69,18 +71,18 @@ def parse_variant(input_file, output_dir):
                 global_allele_freq = fixed_csq[1]
                 eur_allele_freq = fixed_csq[2]
                 swe_allele_freq = fixed_csq[3]
-
+                
                 # Loop through all transcripts overlapping the position of the variant and
                 # identify all genes/variant types
                 for transcript in variable_csq:
                     transcript = transcript.split("|")
                     genes_at_position.add(transcript[1])
-
+                    print(transcript)
                     for type in transcript[6].split("&"):
                         variant_types_at_position.add(type)
 
-                    if transcript[14] != "":
-                        for i, targetscan in enumerate(transcript[14].split("&")):
+                    if transcript[12] != "":
+                        for i, targetscan in enumerate(transcript[12].split("&")):
                             if i == 0:
                                 miRNA_target_at_position.add(":".join(targetscan.split(":")[0:3]))
                             else:

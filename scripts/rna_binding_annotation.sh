@@ -21,6 +21,7 @@ do
 
     vep -i $file -o ${path_name}/encode_$(basename "$file") \
     --vcf \
+    --fork 4 \
     --offline \
     --force \
     --assembly GRCh37 \
