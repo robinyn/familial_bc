@@ -3,11 +3,11 @@ library(biomaRt)
 library(ggplot2)
 library(GenomeInfoDb)
 
-setwd("~/Desktop")
+setwd("~/Desktop/thesis_resources")
 
 #results_vcf=read_tsv("./9_ParsedResults/output.tsv")
 
-summary_file=read_tsv("./swea_results/with_clinvar/per_variant_summary.tsv")
+summary_file=read_tsv("per_variant_summary.tsv")
 
 gene_list=read_tsv("swea_gene_list.tsv", col_names = F)
 
