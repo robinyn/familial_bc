@@ -186,10 +186,10 @@ for file in list_of_files:
 				fixed_csq = ''
 				for index, transcript in enumerate(transcripts.copy()):
 					csq = transcript.split('|')
-					strand = csq[2]
-					exon = csq[3]
-					consequence = csq[5]
-					codon = csq[6].upper()
+					strand = csq[4]
+					exon = csq[5]
+					consequence = csq[7]
+					codon = csq[8].upper()
 					delta_rscu = ''
 					ref_motifs_ese = []
 					ref_motifs_ess = []
@@ -220,13 +220,13 @@ for file in list_of_files:
 
 					# Round PhyloP and GERP to four numbers
 					# Change the csq items to join them in the end.
-					if csq[12]:
-						csq[12] = str(round(float(csq[12]), 4))
-					if csq[13]:
-						csq[13] = str(round(float(csq[13]), 4))
+					if csq[14]:
+						csq[14] = str(round(float(csq[14]), 4))
+					if csq[15]:
+						csq[15] = str(round(float(csq[15]), 4))
 					if not fixed_csq:
-						fixed_csq = [csq[1]]
-						for inf in csq[7:]:
+						fixed_csq = [csq[3]]
+						for inf in csq[9:]:
 							fixed_csq.append(inf)
 
 					# Calculate the deltaRSCU for synonymous variants:
@@ -279,8 +279,8 @@ for file in list_of_files:
 						targetscan_info = ""
 
 					# Remove fixed info from the original csq.
-					csq.pop(1)
-					csq = csq[0:6]
+					csq.pop(3)
+					csq = csq[0:8]
 					# Append the new info to csq and join it together again.
 					csq.append(encode_info)
 					csq.append(str(delta_rscu))
