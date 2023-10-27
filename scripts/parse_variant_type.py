@@ -56,8 +56,6 @@ def parse_variant(input_file, output_dir):
                 ref_allele = line[4]
                 alt_allele = line[5]
                 
-                print(sample_name, chromosome, position)
-
                 fixed_csq = line[25].split(",")[0].split("|")
                 variable_csq = line[25].split(",")[1:]
 
@@ -77,7 +75,6 @@ def parse_variant(input_file, output_dir):
                 for transcript in variable_csq:
                     transcript = transcript.split("|")
                     genes_at_position.add(transcript[1])
-                    print(transcript)
                     for type in transcript[6].split("&"):
                         variant_types_at_position.add(type)
 
