@@ -78,8 +78,8 @@ def parse_variant(input_file, output_dir):
                     for type in transcript[6].split("&"):
                         variant_types_at_position.add(type)
 
-                    if transcript[12] != "":
-                        for i, targetscan in enumerate(transcript[12].split("&")):
+                    if transcript[14] != "":
+                        for i, targetscan in enumerate(transcript[14].split("&")):
                             if i == 0:
                                 miRNA_target_at_position.add(":".join(targetscan.split(":")[0:3]))
                             else:
