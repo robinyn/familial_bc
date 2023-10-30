@@ -114,7 +114,6 @@ def parse_variant(input_file, output_dir):
 
                     genes_at_pos.add(gene_symbol)
 
-                    print(transcript_set)
                 if variant in variant_dict:
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
