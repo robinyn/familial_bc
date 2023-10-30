@@ -26,13 +26,13 @@ def init_args():
 def parse_variant(input_file, output_dir):
     variant_dict=dict()
     filter_type=dict()
+    transcript_set = set()
 
     try:
         with open(input_file, "r") as input_table:
             for index, line in enumerate(input_table):
                 print("Processing line {}".format(index+1), end="\r", flush=True)
                 line = line.strip().split("\t")
-                transcript_set = set()
 
                 # Disregard header line
                 if line[0].startswith("#"):
@@ -110,7 +110,7 @@ def parse_variant(input_file, output_dir):
                     for type in transcript[6].split("&"):
                         variant_types_at_pos.add(type)
 
-                    transcript_set.add((gene_symbol, transcript_id, strand, exon, intron, variant_type, codon, encode, rscu, ref_ese, alt_ese, ref_ess, alt_ess, miRNA_target))
+                    transcript_set.add((variant, gene_symbol, transcript_id, strand, exon, intron, variant_type, codon, encode, rscu, ref_ese, alt_ese, ref_ess, alt_ess, miRNA_target))
 
                     genes_at_pos.add(gene_symbol)
 
