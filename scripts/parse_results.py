@@ -131,7 +131,7 @@ def parse_variant(input_file, output_dir):
         with open(per_transcript_summary_file, "w") as outfile:
             outfile.write("variant\tgene\ttranscript_id\tstrand\texon\tintron\tvariant_type\tcodon\tencode\trscu\tref_ese\talt_ese\tref_ess\talt_ess\tmiRNA_target\n")
             for item in transcript_set:
-                outfile.write("{}\t{}\n".format(var, "\t".join(item)))
+                outfile.write("{}\n".format("\t".join(item)))
 
         with open(filter_summary_file, "w") as outfile:
             outfile.write("filter_type\tcount\n")
