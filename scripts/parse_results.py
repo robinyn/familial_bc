@@ -114,13 +114,12 @@ def parse_variant(input_file, output_dir):
 
                     genes_at_pos.add(gene_symbol)
 
-
+                    print(transcript_set)
                 if variant in variant_dict:
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
                     variant_dict[variant]=[known, "|".join(genes_at_pos), "|".join(variant_types_at_pos), global_allele_freq, eur_allele_freq, swe_allele_freq, gnome_AD_AF, gnome_AD_NFE_AF, phyloP, gerp, clinvar, sample_name]
         print()
-        print(transcript_set)
         per_variant_summary_file = "{}/per_variant_summary.tsv".format(output_dir)
         filter_summary_file ="{}/filter_summary.tsv".format(output_dir)
         per_transcript_summary_file = "{}/per_transcript_summary.tsv".format(output_dir)
