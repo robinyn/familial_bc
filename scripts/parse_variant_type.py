@@ -55,12 +55,12 @@ def parse_variant(input_file, output_dir):
                 position = line[2]
                 ref_allele = line[4]
                 alt_allele = line[5]
-                
+
                 fixed_csq = line[25].split(",")[0].split("|")
                 variable_csq = line[25].split(",")[1:]
 
                 clinvar = line[26]
-                
+
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
 
@@ -69,7 +69,7 @@ def parse_variant(input_file, output_dir):
                 global_allele_freq = fixed_csq[1]
                 eur_allele_freq = fixed_csq[2]
                 swe_allele_freq = fixed_csq[3]
-                
+
                 # Loop through all transcripts overlapping the position of the variant and
                 # identify all genes/variant types
                 for transcript in variable_csq:

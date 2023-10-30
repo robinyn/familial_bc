@@ -8,7 +8,8 @@ summary_file=read_tsv("bridges_annotation/concept_699_kvist_pheno_v13.txt")
 num_unknown_age = summary_file %>% filter(AgeDiagIndex==888) %>% nrow()
 
 age_diagnosis = summary_file %>% 
-  select(BRIDGES_ID, AgeDiagIndex, fhnumber, fhscore)
+  select(BRIDGES_ID, AgeDiagIndex, fhnumber, fhscore) %>% 
+  filter(AgeDiagIndex!=888)
 
 age_diagnosis$fhnumber[age_diagnosis$fhnumber==888]=NA
 age_diagnosis$fhnumber[age_diagnosis$fhnumber==777]=NA
