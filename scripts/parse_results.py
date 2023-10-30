@@ -124,7 +124,7 @@ def parse_variant(input_file, output_dir):
         per_transcript_summary_file = "{}/per_transcript_summary.tsv".format(output_dir)
 
         with open(per_variant_summary_file, "w") as outfile:
-            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tgnome_AD_AF\tgnome_AD_NFE_AF\tphyloP\tgerp\tmiRNA\tClinVar\tsamples\n")
+            outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tgnome_AD_AF\tgnome_AD_NFE_AF\tphyloP\tgerp\tClinVar\tsamples\n")
             for var in variant_dict.keys():
                 outfile.write("{}\t{}\n".format(var, "\t".join(variant_dict[var])))
 
