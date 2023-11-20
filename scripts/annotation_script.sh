@@ -43,6 +43,7 @@ do
     vep -i $file -o ${output_path}/vep_$(basename "$file") \
     --cache \
     --vcf \
+    --fork 4 \
     --offline \
     --force \
     --assembly GRCh37 \
