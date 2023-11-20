@@ -39,6 +39,9 @@ def parse_vcf(input_dir, output_file):
         #         files_list.remove(file)
 
         files_list=[]
+
+        input_dir=input_dir.removesuffix("/")
+
         for directory_item in os.walk(input_dir):
             for file in directory_item[2]:
                 if file.endswith('.vcf'):
@@ -51,7 +54,7 @@ def parse_vcf(input_dir, output_file):
             output_tsv.write(header)
             for index, file in enumerate(files_list):
                 print("Processing {} ({}/{})".format(file, index+1, len(files_list)))
-                with open("{dir}/{name}".format(dir=input_dir, name=file), "r") as input_vcf:
+                with open(file, "r") as input_vcf:
                     for line in input_vcf:
                         # Disregard metadata/header lines
                         if line.startswith("##"):
