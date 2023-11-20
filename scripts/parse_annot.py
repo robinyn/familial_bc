@@ -33,10 +33,17 @@ def parse_vcf(input_dir, output_file):
         annot_dict[item]="NA"
 
     try:
-        files_list = os.listdir(input_dir)
-        for file in files_list:
-            if '.vcf' not in file:
-                files_list.remove(file)
+        # files_list = os.listdir(input_dir)
+        # for file in files_list:
+        #     if '.vcf' not in file:
+        #         files_list.remove(file)
+
+        files_list=[]
+        for directory_item in os.walk(input_dir):
+            for file in directory_item[2]:
+                if file.endswith('.vcf'):
+                    files_list.append(directory_item[0]+"/"+file)
+
 
         print("{num_file} VCF files to parse".format(num_file=len(files_list)))
 

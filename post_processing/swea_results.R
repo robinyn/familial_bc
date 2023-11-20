@@ -4,26 +4,27 @@ library(ggplot2)
 setwd("~/Desktop/thesis")
 
 per_variant=read_tsv("swea_results/per_variant_summary.tsv")
-per_transcript=read_tsv("swea_results/reformatted_transcript_summary.tsv")
+per_transcript=read_tsv("swea_results/per_transcript_summary.tsv")
 
 gene_list=read_tsv("swea_gene_list.tsv", col_names = F)
-
-cnames = colnames(per_variant) 
-cnames = cnames[-12]
-
-colnames(per_variant) = cnames
-
-per_variant = per_variant[,1:13]
 
 synonymous = per_variant %>% 
   #separate_longer_delim(type, delim="|") %>% 
   filter(str_detect(type, "synonymous_variant")) %>% 
   filter(gene %in% gene_list$X1) %>% 
   mutate(n_sample=lengths(str_split(samples, "\\|"))) %>% 
-  select(-samples)
+  select(-samples) %>% 
+  mutate(pathogenicity=str_split(ClinVar, "\\|", simplify = TRUE)[,7])
 
 synonymous$known_variation[!is.na(synonymous$known_variation)]=FALSE
 synonymous$known_variation[is.na(synonymous$known_variation)]=TRUE
+
+synonymous$pathogenicity[synonymous$pathogenicity==""]=NA
+synonymous$pathogenicity[synonymous$pathogenicity=="Benign" | synonymous$pathogenicity=="Likely_benign" ]="Benign/Likely_benign" 
+synonymous$pathogenicity[synonymous$pathogenicity=="Pathogenic"]="Pathogenic/Likely_pathogenic"
+
+synonymous_unknown = synonymous %>% 
+  filter(is.na(AF)&is.na(EUR_AF)&is.na(Swe_AF)&is.na(known_variation)&is.na(ClinVar))
 
 synonymous_selected = synonymous %>% 
   filter(AF<0.1 & phyloP>=-log10(0.05))
@@ -39,7 +40,7 @@ synonymous_gene = synonymous %>%
   summarise(n=n())
 
 synonymous_transcripts = per_transcript %>% 
-  filter(variant %in% synonymous_selected$variant) %>% 
+  filter(variant %in% synonymous_not_benign$variant) %>% 
   filter(str_detect(variant_type,"synonymous_variant"))
 
 p = ggplot() +
