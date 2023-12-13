@@ -15,17 +15,29 @@ def init_args():
                         help="Directory of input files (Default = current directory)")
     parser.add_argument('-o', '--output', default="output.tsv", nargs="?", \
                         help="Directory and name of the output file. (Default = ./output.tsv)")
+    parser.add_argument('-t', '--type', default="swea", nargs="?", \
+                        help="Type of data to parse (swea/bridges)")
 
     args = parser.parse_args()
     input_dir = args.input
     output_file = args.output
+    data_type = args.type
 
-    return input_dir, output_file
+    return input_dir, output_file, data_type
 
-def parse_vcf(input_dir, output_file):
-    header=("#sample_name\tchromosome\tposition\tvariant_id\tref_allele\talt_allele\tquality\tfilter\tAC\tAF"
-    "\tAN\tBaseQRankSum\tClippingRankSum\tDP\tExcessHet\tFS\tMLEAC\tMLEAF"
-    "\tMQ\tMQRankSum\tNDA\tQD\tReadPosRankSum\tSOR\tFSEQ\tCSQ\tClinVar\tformat\tadd_info\n")
+def parse_vcf(input_dir, output_file, data_type):
+
+    if data_type=="swea":
+        header=("#sample_name\tchromosome\tposition\tvariant_id\tref_allele\talt_allele\tquality\tfilter\tCSQ\tClinVar\tformat\tadd_info\tAC\tAF"
+        "\tAN\tBaseQRankSum\tClippingRankSum\tDP\tExcessHet\tFS\tMLEAC\tMLEAF"
+        "\tMQ\tMQRankSum\tNDA\tQD\tReadPosRankSum\tSOR\tFSEQ\n")
+    elif data_type=="bridges":
+        header=("#sample_name\tchromosome\tposition\tvariant_id\tref_allele\talt_allele\tquality\tfilter\tCSQ\tClinVar\tformat\tadd_info\tTYPE\tDP"
+        "\tVD\tAF\tBIAS\tREFBIAS\tVARBIAS\tPMEAN\tPSTD\tQUAL"
+        "\tQSTD\tSBF\tODDRATIO\tMQ\tSN\tHIAF\tADJAF\tSHIFT3\tMSI\tMSILEN\tNM\tHICNT\tHICOV\tLSEQ\tRSEQ\tGDAMP\tTLAMP\tNCAMP\tAMPFLAG\n")
+    else:
+        print("ERROR: Invalid data type")
+        exit
 
     annot_dict={}
 
@@ -96,6 +108,9 @@ def parse_vcf(input_dir, output_file):
                         for item in parsed_info:
                             annot_dict[item[0]]=item[1]
 
+                        if data_type=="bridges":
+                            del annot_dict["SAMPLE"]
+
                         output_tsv.write("\t".join(annot_dict.values()) + "\n")
 
                         for item in header.removesuffix("\n").split("\t")[1:]:
@@ -104,5 +119,5 @@ def parse_vcf(input_dir, output_file):
     except Exception as e:
         print("ERROR: {error}".format(error=e))
 
-input_dir, output_file = init_args()
-parse_vcf(input_dir, output_file)
+input_dir, output_file, data_type = init_args()
+parse_vcf(input_dir, output_file, data_type)

@@ -12,18 +12,21 @@ def init_args():
                         help="Directory and name of the input file (Default = ./input.tsv)")
     parser.add_argument('-o', '--output', default="./output/", nargs="?", \
                         help="Directory for the output files. (Default = ./output/)")
+    parser.add_argument('-t', '--type', default="swea", nargs="?", \
+                        help="Type of data to parse (swea/bridges)")
 
     args = parser.parse_args()
     input_file = args.input
     output_dir = args.output
+    data_type=args.type
 
     if output_dir.strip().endswith("/"):
         output_dir = output_dir.removesuffix("/")
 
-    return input_file, output_dir
+    return input_file, output_dir, data_type
 
 
-def parse_variant(input_file, output_dir):
+def parse_variant(input_file, output_dir, data_type):
     variant_dict=dict()
     filter_type=dict()
     transcript_set = set()
@@ -37,15 +40,45 @@ def parse_variant(input_file, output_dir):
                 # Disregard header line
                 if line[0].startswith("#"):
                     continue
+
                 # If variant did not pass filtering, add filter type to dict,
                 # increase count and skip to next iteration
-
                 if line[7] != "PASS":
                     if line[7] not in filter_type:
                         filter_type[line[7]]=1
                     else:
                         filter_type[line[7]]+=1
                     continue
+
+                # Additional filtering for BRIDGES data
+                if data_type=="bridges":
+                    DP = float(line[9])
+                    AF = float(line[11])
+                    QUAL = float(line[17])
+                    MQ = float(line[21])
+                    NM = float(line[28])
+
+                    add_filter = []
+
+                    if QUAL < 30:
+                        add_filter.append("q30")
+                    elif AF < 0.2:
+                        add_filter.append("f0.2")
+                    elif MQ < 60:
+                        add_filter.append("Q60")
+                    elif NM > 2:
+                        add_filter.append("NM2.0")
+                    elif DP < 7.5:
+                        add_filter.append("fd7.5")
+
+                    add_filter = ";".join(add_filter)
+
+                    if add_filter:
+                        if add_filter not in filter_type:
+                            filter_type[add_filter]=1
+                        else:
+                            filter_type[add_filter]+=1
+                        continue
 
                 # Parse variant info/consequence
                 sample_name = line[0]
@@ -54,10 +87,10 @@ def parse_variant(input_file, output_dir):
                 ref_allele = line[4]
                 alt_allele = line[5]
 
-                fixed_csq = line[25].split(",")[0].split("|")
-                variable_csq = line[25].split(",")[1:]
+                fixed_csq = line[8].split(",")[0].split("|")
+                variable_csq = line[8].split(",")[1:]
 
-                clinvar = line[26]
+                clinvar = line[9]
 
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
@@ -141,5 +174,5 @@ def parse_variant(input_file, output_dir):
     except Exception as e:
         print("ERROR: {}".format(e))
 
-input_file, output_dir = init_args()
-parse_variant(input_file,output_dir)
+input_file, output_dir, data_type = init_args()
+parse_variant(input_file,output_dir, data_type)
