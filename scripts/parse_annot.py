@@ -1,8 +1,12 @@
 # Name: parse_annot.py
-# Version 1.0
+# Version 1.2
 # Author: Euisuk Robin Han
 # Date: 26 Sept 2023
 # Description: A script to parse annotations from SWEA/BRIDGES annotation pipeline V2
+#
+# CHANGE LOG
+# 1. Added different headers for SWEA and BRIDGES data (13 Dec 23)
+# 2. Added -type flag for data type (13 Dec 23)
 
 import argparse
 import os

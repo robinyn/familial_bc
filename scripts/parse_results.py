@@ -2,6 +2,9 @@
 # Author: Euisuk Robin Han
 # Date: 27 Oct 2023
 # Description: A script to re-format parsed annotations from SWEA/BRIDGES annotation pipeline V2
+#
+# CHANGE LOG
+# Integrated additional filtering for BRIDGES data (13 Dec 23)
 
 import argparse
 
