@@ -5,6 +5,7 @@
 #
 # CHANGE LOG
 # Integrated additional filtering for BRIDGES data (13 Dec 23)
+#
 
 import argparse
 
@@ -32,7 +33,9 @@ def init_args():
 def parse_variant(input_file, output_dir, data_type):
     variant_dict=dict()
     filter_type=dict()
+    sample_dict=dict()
     transcript_set = set()
+
 
     try:
         with open(input_file, "r") as input_table:
@@ -90,10 +93,16 @@ def parse_variant(input_file, output_dir, data_type):
                 ref_allele = line[4]
                 alt_allele = line[5]
 
-                fixed_csq = line[8].split(",")[0].split("|")
-                variable_csq = line[8].split(",")[1:]
+                genotype = line[40].split(":")[0]
 
-                clinvar = line[9]
+                genotype = genotype.replace("0", ref_allele).replace("1", alt_allele).replace("/", "")
+
+                # **** CHANGE BACK TO line[8] ********
+                fixed_csq = line[37].split(",")[0].split("|")
+                variable_csq = line[37].split(",")[1:]
+
+                # **** CHANGE BACK TO LINE[9] ********
+                clinvar = line[38]
 
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
@@ -150,6 +159,11 @@ def parse_variant(input_file, output_dir, data_type):
 
                     genes_at_pos.add(gene_symbol)
 
+                if sample_name in sample_dict:
+                    sample_dict[sample_name].append([variant, genotype])
+                else:
+                    sample_dict[sample_name]=[[variant, genotype]]
+
                 if variant in variant_dict:
                     variant_dict[variant][-1]+="|{}".format(sample_name)
                 else:
@@ -158,6 +172,7 @@ def parse_variant(input_file, output_dir, data_type):
         per_variant_summary_file = "{}/per_variant_summary.tsv".format(output_dir)
         filter_summary_file ="{}/filter_summary.tsv".format(output_dir)
         per_transcript_summary_file = "{}/per_transcript_summary.tsv".format(output_dir)
+        per_sample_summary_file = "{}/per_sample_summary.tsv".format(output_dir)
 
         with open(per_variant_summary_file, "w") as outfile:
             outfile.write("variant\tknown_variation\tgene\ttype\tAF\tEUR_AF\tSwe_AF\tgnome_AD_AF\tgnome_AD_NFE_AF\tphyloP\tgerp\tClinVar\tsamples\n")
@@ -168,6 +183,12 @@ def parse_variant(input_file, output_dir, data_type):
             outfile.write("variant\tgene\ttranscript_id\tstrand\texon\tintron\tvariant_type\tcodon\tencode\trscu\tref_ese\talt_ese\tref_ess\talt_ess\tmiRNA_target\n")
             for item in transcript_set:
                 outfile.write("{}\n".format("\t".join(item)))
+
+        with open(per_sample_summary_file, "w") as outfile:
+            outfile.write("sampleID\tvariant\tgenotype\n")
+            for sample in sample_dict.keys():
+                for item in sample_dict[sample]:
+                    outfile.write("{}\t{}\t{}\n".format(sample, item[0], item[1]))
 
         with open(filter_summary_file, "w") as outfile:
             outfile.write("filter_type\tcount\n")

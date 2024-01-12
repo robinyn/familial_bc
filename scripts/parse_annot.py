@@ -4,6 +4,9 @@
 # Date: 26 Sept 2023
 # Description: A script to parse annotations from SWEA/BRIDGES annotation pipeline V2
 #
+# DEPENDENCIES
+# The script requires dictionaries to be insertion ordered
+#
 # CHANGE LOG
 # 1. Added different headers for SWEA and BRIDGES data (13 Dec 23)
 # 2. Added -type flag for data type (13 Dec 23)
