@@ -97,12 +97,10 @@ def parse_variant(input_file, output_dir, data_type):
 
                 genotype = genotype.replace("0", ref_allele).replace("1", alt_allele).replace("/", "")
 
-                # **** CHANGE BACK TO line[8] ********
-                fixed_csq = line[37].split(",")[0].split("|")
-                variable_csq = line[37].split(",")[1:]
+                fixed_csq = line[8].split(",")[0].split("|")
+                variable_csq = line[8].split(",")[1:]
 
-                # **** CHANGE BACK TO LINE[9] ********
-                clinvar = line[38]
+                clinvar = line[9]
 
                 # Create variant ID (chr-pos-ref-alt)
                 variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
