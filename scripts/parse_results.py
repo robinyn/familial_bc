@@ -58,11 +58,11 @@ def parse_variant(input_file, output_dir, data_type):
 
                 # Additional filtering for BRIDGES data
                 if data_type=="bridges":
-                    DP = float(line[9])
-                    AF = float(line[11])
-                    QUAL = float(line[17])
-                    MQ = float(line[21])
-                    NM = float(line[28])
+                    DP = float(line[14])
+                    AF = float(line[15])
+                    QUAL = float(line[21])
+                    MQ = float(line[25])
+                    NM = float(line[32])
 
                     add_filter = []
 
@@ -93,7 +93,7 @@ def parse_variant(input_file, output_dir, data_type):
                 ref_allele = line[4]
                 alt_allele = line[5]
 
-                genotype = line[40].split(":")[0]
+                genotype = line[11].split(":")[0]
 
                 genotype = genotype.replace("0", ref_allele).replace("1", alt_allele).replace("/", "")
 

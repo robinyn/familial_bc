@@ -12,7 +12,7 @@ gene_list=read_tsv("bridges_gene_list.txt", col_names = F)
 
 bc_genes=read_tsv("known_BC_genes.txt", col_names = F)
 
-source("~/Desktop/thesis/scripts/get_canonical_transcript.R")
+source("~/Dev/familial_bc/scripts/get_canonical_transcript.R")
 
 transcripts = per_transcript %>%
   filter(gene %in% gene_list$X1)

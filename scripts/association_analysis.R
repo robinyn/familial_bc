@@ -1,6 +1,6 @@
 library(tidyverse)
 
-setwd("~/Desktop/association_analysis/")
+setwd("~/Desktop/thesis/association_analysis/")
 
 per_transcript=read_tsv("~/Desktop/thesis/bridges_results/per_transcript_summary.tsv") %>% 
   mutate(variant=str_remove(variant, "chr"))
@@ -54,12 +54,16 @@ case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt")
 
 control_samples = control_phenotypes %>% 
   filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
+  filter(famHist==1) %>% # Select variants with family history
+  filter(ethnicityClass==5) %>% # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=1)
 
 case_samples = case_phenotypes %>% 
   filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
+  filter(famHist==1) %>% # Select variants with family history
+  filter(ethnicityClass==5) %>%  # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=2) 
@@ -99,8 +103,8 @@ ped_out = ped_out %>%
   mutate(across(colnames(ped_out)[-c(1,2,3)], 
                 ~replace_na(., sprintf("%1$s%1$s", str_split(cur_column(), "-", simplify = TRUE)[[3]]))))
 
-write_tsv(ped_out, "assoc_analysis.ped", na="00", col_names = FALSE)
-write_tsv(map_out, "assoc_analysis.map", na="00", col_names = FALSE)
+write_tsv(ped_out, "assoc_analysis_easian.ped", na="00", col_names = FALSE)
+write_tsv(map_out, "assoc_analysis_easian.map", na="00", col_names = FALSE)
 
 
 
