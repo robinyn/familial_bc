@@ -58,7 +58,7 @@ def parse_variant(input_file, output_dir, data_type):
 
                 # Additional filtering for BRIDGES data
                 if data_type=="bridges":
-                    DP = float(line[14])
+                    DP = float(line[13])
                     AF = float(line[15])
                     QUAL = float(line[21])
                     MQ = float(line[25])
