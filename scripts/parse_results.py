@@ -68,13 +68,13 @@ def parse_variant(input_file, output_dir, data_type):
 
                     if QUAL < 30:
                         add_filter.append("q30")
-                    elif AF < 0.2:
+                    if AF < 0.2:
                         add_filter.append("f0.2")
-                    elif MQ < 60:
-                        add_filter.append("Q60")
-                    elif NM > 2:
+                    if MQ < 60:
+                        add_filter.append("Q60") 
+                    if NM > 2:
                         add_filter.append("NM2.0")
-                    elif DP < 7.5:
+                    if AF*DP < 7.5:
                         add_filter.append("fd7.5")
 
                     add_filter = ";".join(add_filter)

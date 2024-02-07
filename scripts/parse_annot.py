@@ -4,8 +4,10 @@
 # Date: 26 Sept 2023
 # Description: A script to parse annotations from SWEA/BRIDGES annotation pipeline V2
 #
+# *** WILL ONLY WORK WITH SWEA/BRIDGES DATA ***
+#
 # DEPENDENCIES
-# The script requires dictionaries to be insertion ordered
+# The script requires dictionaries to be insertion ordered (Python 3.10+)
 #
 # CHANGE LOG
 # 1. Added different headers for SWEA and BRIDGES data (13 Dec 23)
@@ -52,11 +54,6 @@ def parse_vcf(input_dir, output_file, data_type):
         annot_dict[item]="NA"
 
     try:
-        # files_list = os.listdir(input_dir)
-        # for file in files_list:
-        #     if '.vcf' not in file:
-        #         files_list.remove(file)
-
         files_list=[]
 
         input_dir=input_dir.removesuffix("/")
