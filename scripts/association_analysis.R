@@ -26,23 +26,23 @@ variant_list = variants %>%
   unique()
 
 # Read phenotype annotations for the samples
-control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt")
-case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt")
+control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt") #%>% 
+  filter(study!="HEBCS") # HEBCS withdrew from BCAC
+case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt") #%>% 
+  filter(study!="HEBCS") # HEBCS withdrew from BCAC
 
 # Filter control samples to exclude HEBCS samples and filter by population
 control_samples = control_phenotypes %>% 
-  filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
   #filter(famHist==1) %>% # Select samples with family history
-  filter(ethnicityClass==5) %>% # Select population (1 - European, 5 - East Asian)
+  filter(ethnicityClass==1) %>% # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=1)
 
 # Filter case samples to exclude HEBCS samples and filter by population
 case_samples = case_phenotypes %>% 
-  filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
   filter(famHist==1) %>% # Select samples with family history
-  filter(ethnicityClass==5) %>%  # Select population (1 - European, 5 - East Asian)
+  filter(ethnicityClass==1) %>%  # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=2) 
