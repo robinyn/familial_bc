@@ -1,6 +1,5 @@
 ## Title: association_analysis.R
 ## Author: Euisuk Robin Han
-## Last modified: 02 Feb 24
 ## Description: A script for the case-control association analysis of BRIDGES data 
 ## Dependencies: Tested and stable with: 
 ##                R version 4.2.3
@@ -26,8 +25,6 @@ variant_list = variants %>%
   dplyr::select(c("variant", "samples", "ref_allele", "alt_allele")) %>% 
   unique()
 
-#synonymous_variants = variants %>% filter(variant %in% variant_list$variant) %>% unique()
-
 # Read phenotype annotations for the samples
 control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt")
 case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt")
@@ -36,7 +33,7 @@ case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt")
 control_samples = control_phenotypes %>% 
   filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
   #filter(famHist==1) %>% # Select samples with family history
-  #filter(ethnicityClass==1) %>% # Select population (1 - European, 5 - East Asian)
+  filter(ethnicityClass==5) %>% # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=1)
@@ -45,7 +42,7 @@ control_samples = control_phenotypes %>%
 case_samples = case_phenotypes %>% 
   filter(study!="HEBCS") %>% # HEBCS withdrew from BCAC
   filter(famHist==1) %>% # Select samples with family history
-  #filter(ethnicityClass==1) %>%  # Select population (1 - European, 5 - East Asian)
+  filter(ethnicityClass==5) %>%  # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=2) 
@@ -54,18 +51,17 @@ case_samples = case_phenotypes %>%
 sample_list = control_samples %>% rbind(case_samples)
 
 # Read the per_sample summary file to generate the PED files from
-per_sample = read_tsv("~/Desktop/thesis/bridges_results/per_sample_summary.tsv")
+per_sample = read_tsv("~/Desktop/thesis/bridges_results/per_sample_summary.tsv") %>% 
+  mutate(variant=str_remove(variant, "chr"))
 
 samples_with_pathogenic=per_sample %>% 
-  mutate(variant=str_remove(variant, "chr")) %>% 
-  filter(variant %in% pathogenic_variants$variant)
+  filter(variant %in% pathogenic_variants$variant) 
 
 # Filter variants and samples to make sure they passed the past filtering steps
 per_sample = per_sample %>% 
-  mutate(variant=str_remove(variant, "chr")) %>% 
-  filter(!variant %in% pathogenic_variants$variant) %>% 
-  filter(variant %in% variant_list$variant) %>% 
-  filter(sampleID %in% sample_list$BRIDGES_ID)
+  filter(!sampleID %in% (samples_with_pathogenic$sampleID %>% unique())) %>% 
+  filter(sampleID %in% sample_list$BRIDGES_ID) %>% 
+  filter(variant %in% variant_list$variant)
 
 # Pivot the per_sample table to a wider format to match the PED format
 ped_out = per_sample %>% pivot_wider(names_from = variant, values_from = genotype)
@@ -87,8 +83,8 @@ ped_out = ped_out %>%
                 ~replace_na(., sprintf("%1$s%1$s", str_split(cur_column(), "-", simplify = TRUE)[[3]]))))
 
 # Write the generated PED/MAP files to disk
-write_tsv(ped_out, "assoc_analysis_no_pathogenic_fam_hist.ped", na="00", col_names = FALSE)
-write_tsv(map_out, "assoc_analysis_no_pathogenic_fam_hist.map", na="00", col_names = FALSE)
+write_tsv(ped_out, "assoc_analysis_es_asian_no_pathogenic_fam_hist.ped", na="00", col_names = FALSE)
+write_tsv(map_out, "assoc_analysis_es_asian_no_pathogenic_fam_hist.map", na="00", col_names = FALSE)
 
 
 
