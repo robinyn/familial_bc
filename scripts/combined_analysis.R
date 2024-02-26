@@ -14,7 +14,7 @@ library(DBI)
 setwd("~/Desktop/thesis")
 
 ################################## SELECT CORRECT DATA TYPE ##################################
-data_type = "bridges"
+data_type = "swea"
 ##############################################################################################
 
 if(data_type=="swea"){

@@ -71,7 +71,7 @@ def parse_variant(input_file, output_dir, data_type):
                     if AF < 0.2:
                         add_filter.append("f0.2")
                     if MQ < 60:
-                        add_filter.append("Q60") 
+                        add_filter.append("Q60")
                     if NM > 2:
                         add_filter.append("NM2.0")
                     if AF*DP < 7.5:
@@ -91,11 +91,14 @@ def parse_variant(input_file, output_dir, data_type):
                 chromosome = line[1]
                 position = line[2]
                 ref_allele = line[4]
-                alt_allele = line[5]
+                alt_allele = line[5].split(",")
 
                 genotype = line[11].split(":")[0]
 
-                genotype = genotype.replace("0", ref_allele).replace("1", alt_allele).replace("/", "")
+                for i, allele in enumerate(alt_allele, start=1):
+                    genotype = genotype.replace(str(i), allele)
+
+                genotype = genotype.replace("0", ref_allele).replace("/", "")
 
                 fixed_csq = line[8].split(",")[0].split("|")
                 variable_csq = line[8].split(",")[1:]

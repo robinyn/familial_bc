@@ -5,8 +5,9 @@ setwd("~/Desktop/thesis")
 
 swea_results = read_tsv("swea_results/swea_synonymous_list.tsv")
 swea_pathogenic = read_tsv("swea_results/swea_pathogenic_list.tsv")
-bridges_results = read_tsv("bridges_results/bridges_synonymous_list.tsv")
+bridges_results = read_tsv("bridges_results/bridges_synonymous_list.tsv") 
 bridges_pathogenic = read_tsv("bridges_results/bridges_pathogenic_list.tsv")
+bridges_AF = read_tsv("allele_frequencies.tsv")
 
 swea_results=swea_results %>% 
   filter(!(variant=="6-35423662-A-C,T" & codon=="ccA/ccC"))
