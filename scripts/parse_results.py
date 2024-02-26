@@ -106,7 +106,7 @@ def parse_variant(input_file, output_dir, data_type):
                 clinvar = line[9]
 
                 # Create variant ID (chr-pos-ref-alt)
-                variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, alt_allele)
+                variant = "{}-{}-{}-{}".format(chromosome, position, ref_allele, ",".join(alt_allele))
 
                 # Parse fixed csq
                 known = fixed_csq[0]
