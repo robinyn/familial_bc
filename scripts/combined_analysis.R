@@ -114,7 +114,7 @@ synonymous_variants = synonymous_transcripts %>%
   mutate(clinvar_phenotype=if_else(!is.na(ClinVar),str_split(ClinVar, "\\|", simplify=TRUE)[,14], "Unreported")) %>% 
   mutate(clinvar_review_status=if_else(!is.na(ClinVar),str_split(ClinVar, "\\|", simplify=TRUE)[,25], "Unreported")) %>% 
   mutate(phenotype_BOC=if_else(str_detect(clinvar_phenotype, 
-                              "Breast|breast|Ovarian|ovarian|Hereditary_cancer-predisposing_syndrome"), TRUE, FALSE)) %>% 
+                              "Breast|breast|Ovarian|ovarian|Hereditary_cancer-predisposing_syndrome|Lynch_syndrome"), TRUE, FALSE)) %>% 
   mutate(clinvar_id=if_else(!is.na(ClinVar), str_split(ClinVar, "\\|", simplify=TRUE)[,3], "Unreported"))
 
 # Collapse the variant list, so that redundant entries are removed

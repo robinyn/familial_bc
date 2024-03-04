@@ -26,23 +26,24 @@ variant_list = variants %>%
   unique()
 
 # Read phenotype annotations for the samples
-control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt") #%>% 
+control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt") %>% 
   filter(study!="HEBCS") # HEBCS withdrew from BCAC
-case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt") #%>% 
+case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt") %>% 
   filter(study!="HEBCS") # HEBCS withdrew from BCAC
 
 # Filter control samples to exclude HEBCS samples and filter by population
 control_samples = control_phenotypes %>% 
   #filter(famHist==1) %>% # Select samples with family history
-  filter(ethnicityClass==1) %>% # Select population (1 - European, 5 - East Asian)
+  #filter(ethnicityClass==1) %>% # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=1)
 
 # Filter case samples to exclude HEBCS samples and filter by population
 case_samples = case_phenotypes %>% 
-  filter(famHist==1) %>% # Select samples with family history
-  filter(ethnicityClass==1) %>%  # Select population (1 - European, 5 - East Asian)
+  filter(fhnumber>1 & fhnumber!=888 & fhnumber!=777) %>% # Select samples with family history
+  #filter(AgeDiagIndex<50) %>% 
+  #filter(ethnicityClass==1) %>%  # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=2) 
@@ -83,8 +84,8 @@ ped_out = ped_out %>%
                 ~replace_na(., sprintf("%1$s%1$s", str_split(cur_column(), "-", simplify = TRUE)[[3]]))))
 
 # Write the generated PED/MAP files to disk
-write_tsv(ped_out, "assoc_analysis_es_asian_no_pathogenic_fam_hist.ped", na="00", col_names = FALSE)
-write_tsv(map_out, "assoc_analysis_es_asian_no_pathogenic_fam_hist.map", na="00", col_names = FALSE)
+write_tsv(ped_out, "assoc_analysis_no_pathogenic_fam_hist_1st_dg.ped", na="00", col_names = FALSE)
+write_tsv(map_out, "assoc_analysis_no_pathogenic_fam_hist_1st_dg.map", na="00", col_names = FALSE)
 
 
 
