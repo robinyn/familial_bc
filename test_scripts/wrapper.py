@@ -1,11 +1,11 @@
 import argparse
-import time
 import os
-import subprocess
 import glob
-import re
+import sys
+import subprocess
 import shlex
-import annotation_functions as custom
+import multiprocessing
+import EES_ESE_annotation as custom
 
 def init_args():
     parser = argparse.ArgumentParser(prog = "Variant Annotation Pipeline V3")
@@ -85,12 +85,6 @@ def download_dependencies(directory):
 
     command = "conda create -f"
 
-def filter_variants(input_directory, output_directory):
-
-
-
-    return 0
-
 def run_pipeline(input_directory, output_directory, resources_directory):
 
     if not os.path.isdir(output_directory):
@@ -103,7 +97,18 @@ def run_pipeline(input_directory, output_directory, resources_directory):
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    custom.vep_annotation(input_directory, output_directory, resources_directory)
+    # List all VCF files to annotate in the provided directory
+    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+    script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+    command = []
+
+    for file in list_of_files:
+        command.append(shlex.split("sh {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
+
+    p = multiprocessing.Pool(10)
+    p.map(subprocess.run, command)
+    p.close()
 
     input_directory = output_directory
     output_directory = "{}/2_CustomAnnotations".format(base_output_directory)
@@ -111,14 +116,24 @@ def run_pipeline(input_directory, output_directory, resources_directory):
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    custom.ESE_ESS_annotation(input_directory, output_directory, resources_directory)
+    # List all VCF files to annotate in the provided directory
+    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+    command = []
+
+    for file in list_of_files:
+        command.append((file, output_directory, resources_directory))
+
+    p = multiprocessing.Pool(10)
+    p.starmap(custom.ESE_ESS_annotation, command)
+    p.close()
 
     return 0
 
+if __name__ == "__main__":
+    args = init_args()
+    if args.command == "annotate":
+        run_pipeline(args.data_directory, args.output_directory, args.resources_directory)
 
-args = init_args()
-if args.command == "annotate":
-    run_pipeline(args.data_directory, args.output_directory, args.resources_directory)
-
-elif args.command == "setup":
-    download_dependencies(directory=args.directory)
+    elif args.command == "setup":
+        download_dependencies(directory=args.directory)

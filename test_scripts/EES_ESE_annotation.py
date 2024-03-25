@@ -18,13 +18,12 @@
 # Original scripts by Arthur can be found in https://www.github.com/aboffelli/variant_annotation
 
 import re
-import glob
 import os
 import subprocess
 import shlex
 import sys
 
-def initialize(data_directory, resources_directory):
+def initialize(resources_directory):
     # RSCU file
     rscu_file = '{resources}/RSCU_table.tsv'.format(resources=resources_directory)
 
@@ -48,10 +47,7 @@ def initialize(data_directory, resources_directory):
             line = line.strip().split("\t")
             rscu_table[line[0]] = float(line[1])
 
-    # List all VCF files to annotate in the provided directory
-    list_of_files = glob.glob("{data}/**/*.vcf".format(data=data_directory), recursive=True)
-
-    return ese_set, ess_set, rscu_table, list_of_files
+    return ese_set, ess_set, rscu_table
 
 def reverse_complement(sequence):
     complement_dictionary = {'A': 'T', 'C': 'G', 'T': 'A', 'G': 'C'}
@@ -212,97 +208,57 @@ def annotate_ESE_ESS(transcript_csq, flanking_sequence, ese_set, ess_set):
 
     return [ese_ref, ese_alt, ess_ref, ess_alt]
 
-def vep_annotation(input_directory, output_directory, resources_directory):
-    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
-
-    for file in list_of_files:
-        print(file)
-
-        basename = file.split("/")[-1]
-
-        command = """vep -i {input_name} -o {output_directory}/vep_{output_name} \
-                --cache \
-                --vcf \
-                --fork 4 \
-                --offline \
-                --force \
-                --assembly GRCh37 \
-                --distance 0 \
-                --check_existing \
-                --af \
-                --af_1kg \
-                --af_gnomade \
-                --custom file={resources_directory}/SweGen/anon-SweGen_STR_NSPHS_1000samples_freq_hg19.vcf.gz,short_name=SweGen,format=vcf,type=exact,fields=AF \
-                --custom file={resources_directory}/All_hg19_RS.bw,short_name=GERP,format=bigwig,type=exact \
-                --custom file={resources_directory}/hg19.100way.phyloP100way.bw,short_name=PhyloP,format=bigwig,type=exact \
-                --custom file={resources_directory}/EncodeFiles/encode_rna_binding_1.bed.gz,short_name=Encode,format=bed,type=overlap \
-                --custom file={resources_directory}/targetscan/targetscan_miRNA_sorted.bed.gz,short_name=TargetScan,format=bed,type=overlap \
-                --custom file={resources_directory}/clinvar_20240312.vcf.gz,short_name=ClinVar,format=vcf,type=exact,fields="ALLELEID%CLNDISDB%\
-                CLNDN%CLNHGVS%CLNREVSTAT%CLNSIG%CLNSIGCONF%CLNSIGINCL%CLNVC%CLNVCSO%CLNVI%DBVARID%GENEINFO%MC%ORIGIN" \
-                --fields "Allele,Gene,SYMBOL,Feature,BIOTYPE,Existing_variation,STRAND,EXON,INTRON,Consequence,Codons,AF,EUR_AF,SweGen_AF,gnomADe_AF,gnomADe_NFE_AF,PhyloP,GERP,\
-                Encode,TargetScan,ClinVar,ClinVar_ALLELEID,ClinVar_CLNDISDB,ClinVar_CLNDN,ClinVar_CLNHGVS,ClinVar_CLNREVSTAT,ClinVar_CLNSIG,ClinVar_CLNSIGCONF,ClinVar_CLNSIGINCL,\
-                ClinVar_CLNVC,ClinVar_CLNVCSO,ClinVar_CLNVI,ClinVar_DBVARID,ClinVar_GENEINFO,ClinVar_MC,ClinVar_ORIGIN" \
-                --no_stats""".format(input_name=file, output_name=basename, output_directory=output_directory, resources_directory=resources_directory)
-
-        run_result = subprocess.run(shlex.split(command), capture_output=True)
-
-    return 0
-
-def ESE_ESS_annotation(data_directory, output_directory, resources_directory):
-    ese_set, ess_set, rscu_table, list_of_files = initialize(data_directory, resources_directory)
-
-    # Put all files in a list, removing anything that is not a vcf file.
-    list_of_files = glob.glob("{data}/**/*.vcf".format(data=data_directory), recursive=True)
+def ESE_ESS_annotation(file, output_directory, resources_directory):
+    ese_set, ess_set, rscu_table = initialize(resources_directory)
 
     # Create a new directory to store the output files if it does not exist.
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    for file in list_of_files:
-        newfile = "{}/custom_{}".format(output_directory, file.split("/")[-1])
-        with open(file, "r") as input_vcf, open(newfile, "w") as output_vcf:
-            for line in input_vcf:
-                if line.startswith("#"):
-                    line = fix_headers(line)
-                else:
-                    line = line.split("\t")
+    newfile = "{}/custom_{}".format(output_directory, file.split("/")[-1])
+    with open(file, "r") as input_vcf, open(newfile, "w") as output_vcf:
+        for line in input_vcf:
+            if line.startswith("#"):
+                line = fix_headers(line)
+            else:
+                line = line.split("\t")
 
-                    flanking_sequence = find_flanking_seq(line)
-                    csq = re.search(r'CSQ=(\S+)', line[7]).group(1).split(",")
+                flanking_sequence = find_flanking_seq(line)
+                csq = re.search(r'CSQ=(\S+)', line[7]).group(1).split(",")
 
-                    csq[0] = round_values(csq[0])
+                csq[0] = round_values(csq[0])
 
-                    fixed_csq = csq[0].split("|")[11:18]
-                    fixed_csq = "|".join(fixed_csq)
+                fixed_csq = csq[0].split("|")[11:18]
+                fixed_csq = "|".join(fixed_csq)
 
-                    encode = csq[0].split("|")[18]
-                    targetscan = csq[0].split("|")[19]
+                encode = csq[0].split("|")[18]
+                targetscan = csq[0].split("|")[19]
 
-                    clinvar = csq[0].split("|")[20:]
-                    clinvar = "|".join(clinvar)
+                clinvar = csq[0].split("|")[20:]
+                clinvar = "|".join(clinvar)
 
-                    var_csq = []
+                var_csq = []
 
-                    for transcript_csq in csq:
-                        transcript_csq = transcript_csq.split("|")
+                for transcript_csq in csq:
+                    transcript_csq = transcript_csq.split("|")
 
-                        dRSCU = calculate_dRSCU(transcript_csq, rscu_table)
-                        ESE_EES = annotate_ESE_ESS(transcript_csq, flanking_sequence, ese_set, ess_set)
-                        transcript_csq = transcript_csq[0:11] + dRSCU + ESE_EES
-                        var_csq.append("|".join(transcript_csq))
+                    dRSCU = calculate_dRSCU(transcript_csq, rscu_table)
+                    ESE_EES = annotate_ESE_ESS(transcript_csq, flanking_sequence, ese_set, ess_set)
+                    transcript_csq = transcript_csq[0:11] + dRSCU + ESE_EES
+                    var_csq.append("|".join(transcript_csq))
 
-                    var_csq = ",".join(var_csq)
+                var_csq = ",".join(var_csq)
 
-                    csq = "REDCSQ={};CSQ={};ENCODE={};TARGETSCAN={};CLINVAR={}".format(fixed_csq, var_csq, encode, targetscan, clinvar)
+                csq = "REDCSQ={};CSQ={};ENCODE={};TARGETSCAN={};CLINVAR={}".format(fixed_csq, var_csq, encode, targetscan, clinvar)
 
-                    line = "\t".join(line)
-                    line = re.sub(r'CSQ=\S+', csq, line)
+                line = "\t".join(line)
+                line = re.sub(r'CSQ=\S+', csq, line)
 
-                output_vcf.write(line)
+            output_vcf.write(line)
 
 if __name__ == "__main__":
-    data_directory=sys.argv[1].strip().removesuffix("/")
+    file=sys.argv[1].strip().removesuffix("/")
     output_directory=sys.argv[2].strip().removesuffix("/")
     resources_directory=sys.argv[3].strip().removesuffix("/")
 
-    ESE_ESS_annotation(data_directory, output_directory, resources_directory)
+    ESE_ESS_annotation(file, output_directory, resources_directory)
