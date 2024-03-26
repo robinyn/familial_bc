@@ -11,19 +11,6 @@ def init_args():
     parser = argparse.ArgumentParser(prog = "Variant Annotation Pipeline V3")
     subparser = parser.add_subparsers(required=True, dest="command")
 
-    filter_parser = subparser.add_parser("filter", help="Filter variants using GATK VariantFiltration command")
-    filter_parser.add_argument('--snp-filter', help=("Directory and name of the text file containing filter names"
-                                                     "and values to be used to filter SNPs. Follow GATK arguments file"
-                                                     "format."))
-    filter_parser.add_argument('--indel-filter', help=("Directory and name of the text file containing filter names"
-                                                     "and values to be used to filter indels. Follow GATK arguments file"
-                                                     "format."))
-    filter_parser.add_argument('-i', '--input-directory', required=True,
-                                 help=("Directory of the VCF files to be filtered. If a file is specified, only the file "
-                                       "will be filtered"))
-    filter_parser.add_argument('-o', '--output-directory', default="output",
-                                 help="Directory for the filtered output files.")
-
     annotate_parser = subparser.add_parser("annotate", help="Annotate VCF files")
     annotate_parser.add_argument('-d', '--data-directory', required=True,
                                  help=("Directory of the raw VCF files. All VCF files present in the "
@@ -32,6 +19,20 @@ def init_args():
                                  help="Directory of the resource files.")
     annotate_parser.add_argument('-o', '--output-directory', default="output",
                                  help="Directory for the output files.")
+    annotate_parser.add_argument('-c', '--cores', default=1, type=int,
+                                 help="Number of cores to use for multiprocessing.")
+    annotate_parser.add_argument('--snp-filter', default="resources/snp_filters.txt",
+                                 help=("Directory and name of the text file containing filter names"
+                                       "and values to be used to filter SNPs. Follow GATK arguments file"
+                                       "format."))
+    annotate_parser.add_argument('--indel-filter', default="resources/indel_filters.txt",
+                                 help=("Directory and name of the text file containing filter names"
+                                       "and values to be used to filter indels. Follow GATK arguments file"
+                                       "format."))
+    annotate_parser.add_argument('--vep', action="store_true", default=False)
+    annotate_parser.add_argument('--custom', action="store_true", default=False)
+    annotate_parser.add_argument('--fs', action="store_true", default=False)
+    annotate_parser.add_argument('--filt', action="store_true", default=False)
 
     setup_parser = subparser.add_parser("setup", help=("Download and install necessary dependencies, "
                                         "download publically available resources for annotation."))
@@ -85,55 +86,156 @@ def download_dependencies(directory):
 
     command = "conda create -f"
 
-def run_pipeline(input_directory, output_directory, resources_directory):
+def unpack(args):
+    return custom.ESE_ESS_annotation(*args)
+
+
+def run_pipeline(input_directory, output_directory, resources_directory, \
+                 cores, filt, fs, vep, custom, snp_filter, indel_filter):
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
+
+    if not (filt or fs or vep or custom):
+        filt = fs = vep = custom = True
+
+    script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
     base_output_directory = output_directory
 
-    output_directory = "{}/1_VEPAnnotations".format(base_output_directory)
+    io_dictionary = {"none":input_directory,
+                    "filt":"{}/1_Filtering".format(base_output_directory),
+                    "fs":"{}/2_FlankingSequence".format(base_output_directory),
+                    "vep":"{}/3_VEPAnnotations".format(base_output_directory),
+                    "custom":"{}/4_CustomAnnotations".format(base_output_directory)}
 
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
+    prev_operation = "none"
 
-    # List all VCF files to annotate in the provided directory
-    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
-    script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+    if filt:
 
-    command = []
+        input_directory = io_dictionary[prev_operation]
+        output_directory = io_dictionary["filt"]
 
-    for file in list_of_files:
-        command.append(shlex.split("sh {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
+        if not os.path.isdir(output_directory):
+            os.mkdir(output_directory)
+            os.mkdir("{}/SNVs".format(output_directory))
+            os.mkdir("{}/Indels".format(output_directory))
 
-    p = multiprocessing.Pool(10)
-    p.map(subprocess.run, command)
-    p.close()
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
 
-    input_directory = output_directory
-    output_directory = "{}/2_CustomAnnotations".format(base_output_directory)
+        command = []
 
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/filtering.sh separateVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
-    # List all VCF files to annotate in the provided directory
-    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
 
-    command = []
+        os.mkdir("{}/FilteredSNVs".format(output_directory))
 
-    for file in list_of_files:
-        command.append((file, output_directory, resources_directory))
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data="{}/SNVs".format(output_directory)), recursive=True)
 
-    p = multiprocessing.Pool(10)
-    p.starmap(custom.ESE_ESS_annotation, command)
-    p.close()
+        command = []
+
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/filtering.sh filterSNPs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
+
+        os.mkdir("{}/FilteredIndels".format(output_directory))
+
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data="{}/Indels".format(output_directory)), recursive=True)
+
+        command = []
+
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/filtering.sh filterIndels {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
+
+        os.mkdir("{}/Merged".format(output_directory))
+
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data="{}/FilteredIndels".format(output_directory)), recursive=True)
+
+        command = []
+
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/filtering.sh mergeVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
+
+        prev_operation = "filt"
+
+    if fs:
+
+        input_directory = io_dictionary[prev_operation]
+        output_directory = io_dictionary["fs"]
+
+        if not os.path.isdir(output_directory):
+            os.mkdir(output_directory)
+
+        prev_operation = "fs"
+
+    if vep:
+
+        input_directory = io_dictionary[prev_operation]
+        output_directory = io_dictionary["vep"]
+
+        if not os.path.isdir(output_directory):
+            os.mkdir(output_directory)
+
+        # List all VCF files to annotate in the provided directory
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        command = []
+
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
+
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
+
+        prev_operation = "vep"
+
+    if custom:
+
+        input_directory = io_dictionary[prev_operation]
+        output_directory = io_dictionary["custom"]
+
+        if not os.path.isdir(output_directory):
+            os.mkdir(output_directory)
+
+        # List all VCF files to annotate in the provided directory
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        command = []
+
+        for file in list_of_files:
+            command.append((file, output_directory, resources_directory))
+
+        p = multiprocessing.Pool(cores)
+        p.map(unpack, command)
+        p.close()
+
+        prev_operation = "custom"
 
     return 0
 
 if __name__ == "__main__":
     args = init_args()
     if args.command == "annotate":
-        run_pipeline(args.data_directory, args.output_directory, args.resources_directory)
+        run_pipeline(args.data_directory, args.output_directory, \
+                     args.resources_directory, args.cores, \
+                     args.filt, args.fs, args.vep, args.custom, \
+                     args.snp_filter, args.indel_filter)
 
     elif args.command == "setup":
         download_dependencies(directory=args.directory)
