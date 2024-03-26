@@ -16,7 +16,7 @@ function separateVariants {
   -O ${output_directory}/Indels/indels_${file##*/} 2>>${output_directory}/Indels/indels_error;
 }
 
-function filterSNPs {
+function filterSNVs {
   # Filter SNVs using the values sugested by the GATK best practices. With the exception of SOR, which we use > 4.0 instead of 3.0. Save the results in a new directory.
   gatk VariantFiltration -V $file \
   --arguments_file ${snp_filters} \

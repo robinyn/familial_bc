@@ -104,7 +104,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
     base_output_directory = output_directory
 
     io_dictionary = {"none":input_directory,
-                    "filt":"{}/1_Filtering".format(base_output_directory),
+                    "filt":"{}/1_Filtering/Merged".format(base_output_directory),
                     "fs":"{}/2_FlankingSequence".format(base_output_directory),
                     "vep":"{}/3_VEPAnnotations".format(base_output_directory),
                     "custom":"{}/4_CustomAnnotations".format(base_output_directory)}
@@ -113,8 +113,11 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
     if filt:
 
+        print("======================== 1. Filtering variants ========================")
+
         input_directory = io_dictionary[prev_operation]
-        output_directory = io_dictionary["filt"]
+        output_directory = "{}/1_Filtering".format(base_output_directory)
+
 
         if not os.path.isdir(output_directory):
             os.mkdir(output_directory)
@@ -122,6 +125,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
             os.mkdir("{}/Indels".format(output_directory))
 
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        print("{} VCF files to process.".format(len(list_of_files)))
+
+        print("Separating SNVs and indels.")
 
         command = []
 
@@ -132,6 +139,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         p.map(subprocess.run, command)
         p.close()
 
+        print("Filtering SNVs.")
+
         os.mkdir("{}/FilteredSNVs".format(output_directory))
 
         list_of_files = glob.glob("{data}/**/*.vcf".format(data="{}/SNVs".format(output_directory)), recursive=True)
@@ -139,11 +148,13 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/filtering.sh filterSNPs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("sh {}/filtering.sh filterSNVs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
         p = multiprocessing.Pool(cores)
         p.map(subprocess.run, command)
         p.close()
+
+        print("Filtering indels.")
 
         os.mkdir("{}/FilteredIndels".format(output_directory))
 
@@ -157,6 +168,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         p = multiprocessing.Pool(cores)
         p.map(subprocess.run, command)
         p.close()
+
+        print("Merging filtered variants.")
 
         os.mkdir("{}/Merged".format(output_directory))
 
@@ -173,7 +186,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
         prev_operation = "filt"
 
+        print("Filtering complete.")
+
     if fs:
+        print("================== 2. Retrieving flanking sequences ===================")
 
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["fs"]
@@ -181,9 +197,28 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         if not os.path.isdir(output_directory):
             os.mkdir(output_directory)
 
+        os.mkdir("{}/temp".format(output_directory))
+
+        list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        print("{} VCF files to process.".format(len(list_of_files)))
+
+        command = []
+
+        for file in list_of_files:
+            command.append(shlex.split("sh {}/flanking_sequences.sh {} {}".format(script_path, file, output_directory)))
+
+        p = multiprocessing.Pool(cores)
+        p.map(subprocess.run, command)
+        p.close()
+
+        print("Flanking sequence retrieval complete.")
+
         prev_operation = "fs"
 
     if vep:
+
+        print("========================== 3. VEP annotations =========================")
 
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["vep"]
@@ -193,6 +228,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
         # List all VCF files to annotate in the provided directory
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        print("{} VCF files to process.".format(len(list_of_files)))
 
         command = []
 
@@ -207,6 +244,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
     if custom:
 
+        print("======================== 4. Custom annotations ========================")
+
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["custom"]
 
@@ -215,6 +254,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
         # List all VCF files to annotate in the provided directory
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+        print("{} VCF files to process.".format(len(list_of_files)))
 
         command = []
 

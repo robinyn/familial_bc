@@ -131,7 +131,7 @@ def round_values(csq):
 
 def find_flanking_seq(line):
 
-    flanking_sequence = re.search(r"FS=(\S[A-Z]+\[.+\/.+\][A-Z]+)",line[7])
+    flanking_sequence = re.search(r"FSEQ=(\S[A-Z]+\[.+\/.+\][A-Z]+)",line[7])
 
     if flanking_sequence:
         flanking_sequence = flanking_sequence.group(1)
