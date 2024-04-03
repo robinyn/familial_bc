@@ -13,7 +13,7 @@ def init_args():
 
     annotate_parser = subparser.add_parser("annotate", help="Annotate VCF files")
     annotate_parser.add_argument('-d', '--data-directory', required=True,
-                                 help=("Directory of the raw VCF files. All VCF files present in the "
+                                 help=("Directory of the raw VpipCF files. All VCF files present in the "
                                  "provided directory will be annotated. If a file is specified, only the file will be annotated."))
     annotate_parser.add_argument('-r', '--resources-directory', required=True,
                                  help="Directory of the resource files.")
@@ -89,6 +89,13 @@ def download_dependencies(directory):
 def unpack(args):
     return custom.ESE_ESS_annotation(*args)
 
+def poolProcesses(cores, func, args):
+
+    p = multiprocessing.Pool(cores)
+    p.map(func, args)
+    p.close()
+
+    return 0
 
 def run_pipeline(input_directory, output_directory, resources_directory, \
                  cores, filt, fs, vep, custom, snp_filter, indel_filter):
@@ -101,7 +108,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
     script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-    base_output_directory = output_directory
+    base_output_directory = output_directory.rstrip("/")
 
     io_dictionary = {"none":input_directory,
                     "filt":"{}/1_Filtering/Merged".format(base_output_directory),
@@ -133,11 +140,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/filtering.sh separateVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh separateVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         print("Filtering SNVs.")
 
@@ -148,11 +153,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/filtering.sh filterSNVs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh filterSNVs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         print("Filtering indels.")
 
@@ -163,11 +166,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/filtering.sh filterIndels {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh filterIndels {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         print("Merging filtered variants.")
 
@@ -178,11 +179,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/filtering.sh mergeVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh mergeVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         prev_operation = "filt"
 
@@ -206,11 +205,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/flanking_sequences.sh {} {}".format(script_path, file, output_directory)))
+            command.append(shlex.split("bash {}/flanking_sequences.sh {} {}".format(script_path, file, output_directory)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         print("Flanking sequence retrieval complete.")
 
@@ -234,11 +231,9 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("sh {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
+            command.append(shlex.split("bash {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
 
-        p = multiprocessing.Pool(cores)
-        p.map(subprocess.run, command)
-        p.close()
+        poolProcesses(cores, subprocess.run, command)
 
         prev_operation = "vep"
 
@@ -262,9 +257,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         for file in list_of_files:
             command.append((file, output_directory, resources_directory))
 
-        p = multiprocessing.Pool(cores)
-        p.map(unpack, command)
-        p.close()
+        poolProcesses(cores, unpack, command)
 
         prev_operation = "custom"
 
