@@ -1,14 +1,14 @@
 library(tidyverse)
 library(UpSetR)
 
-setwd("~/Desktop/thesis")
+setwd("~/Desktop/RESULTS")
 
-swea_results = read_tsv("swea_results/swea_synonymous_list.tsv")
-swea_pathogenic = read_tsv("swea_results/swea_pathogenic_list.tsv")
-swea_af = read_tsv("swea_results/swea_af.tsv")
-bridges_results = read_tsv("bridges_results/bridges_synonymous_list.tsv") 
-bridges_pathogenic = read_tsv("bridges_results/bridges_pathogenic_list.tsv")
-bridges_AF = read_tsv("bridges_results/bridges_af.tsv")
+swea_results = read_tsv("SWEA/swea_synonymous_list.tsv")
+swea_pathogenic = read_tsv("SWEA/swea_pathogenic_list.tsv")
+swea_af = read_tsv("SWEA/swea_af.tsv")
+bridges_results = read_tsv("BRIDGES/bridges_synonymous_list.tsv") 
+bridges_pathogenic = read_tsv("BRIDGES/bridges_pathogenic_list.tsv")
+bridges_AF = read_tsv("BRIDGES/bridges_af.tsv")
 
 swea_results=swea_results %>% 
   filter(!(variant=="6-35423662-A-C,T" & codon=="ccA/ccC"))
@@ -49,7 +49,7 @@ both = intersect(swea_results$variant, bridges_results$variant %>% str_remove("c
 
 both = bridges_results %>% mutate(variant=str_remove(variant, "chr")) %>% filter(variant %in% both)
 
-synonymous = (both$variant %>% unique() %>% length())
+synonymous = (both %>% filter(pathogenicity!="Pathogenic/Likely_pathogenic") %>% nrow())
 conserved = both %>% filter(phyloP_rank==0) %>% nrow()
 unreported = both %>% filter(!AF_reported, !known, is.na(ClinVar)) %>% nrow()
 splice_region = both %>% filter(str_detect(type, "splice")) %>% nrow()

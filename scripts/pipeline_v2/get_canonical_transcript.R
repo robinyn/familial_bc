@@ -13,6 +13,6 @@ cds_lengths=getBM(attributes=c("ensembl_transcript_id", "cds_length"), filters="
 
 canonical_transcripts=protein_coding  %>% 
   filter(transcript_gencode_basic==1) %>% 
-  left_join(cds_lengths, by=join_by(ensembl_transcript_id==ensembl_transcript_id)) %>% 
+  left_join(cds_lengths %>% unique(), by=join_by(ensembl_transcript_id==ensembl_transcript_id)) %>% 
   group_by(hgnc_symbol) %>% 
   top_n(1, cds_length)

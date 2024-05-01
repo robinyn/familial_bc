@@ -8,12 +8,16 @@
 library(tidyverse)
 
 # Set working directory
-setwd("~/Desktop/thesis/association_analysis/")
+setwd("~/Desktop/RESULTS/BRIDGES/")
 
-variants = read_tsv("~/Desktop/thesis/bridges_results/bridges_synonymous_list.tsv") %>% 
+variants = read_tsv("~/Desktop/RESULTS/BRIDGES/bridges_synonymous_list.tsv") %>% 
   mutate(variant=str_remove(variant, "chr"))
 
-pathogenic_variants = read_tsv("~/Desktop/thesis/bridges_results/bridges_pathogenic_list.tsv") %>% 
+pathogenic_variants = read_tsv("~/Desktop/RESULTS/BRIDGES/bridges_pathogenic_list.tsv") %>% 
+  mutate(variant=str_remove(variant, "chr"))
+
+# Read the per_sample summary file to generate the PED files from
+per_sample = read_tsv("~/Desktop/thesis/bridges_results/per_sample_summary.tsv") %>% 
   mutate(variant=str_remove(variant, "chr"))
 
 # Filter to remove non-synonymous variants, check to make sure they are SNPs 
@@ -21,7 +25,8 @@ variant_list = variants %>%
   mutate(variant=str_remove(variant, "chr")) %>% 
   mutate(ref_allele=str_split(variant, "-", simplify=TRUE)[,3]) %>% 
   mutate(alt_allele=str_split(variant, "-", simplify=TRUE)[,4]) %>% 
-  filter(str_length(ref_allele)==1 & str_length(alt_allele)==1) %>% 
+  filter(str_length(ref_allele)==1 & str_length(alt_allele)==1) %>%
+  filter(n_cases > 2) %>% 
   dplyr::select(c("variant", "samples", "ref_allele", "alt_allele")) %>% 
   unique()
 
@@ -35,14 +40,16 @@ case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt") %>%
 control_samples = control_phenotypes %>% 
   #filter(famHist==1) %>% # Select samples with family history
   #filter(ethnicityClass==1) %>% # Select population (1 - European, 5 - East Asian)
+  #filter(ethnicitySubClass==1) %>% 
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
   mutate(status=1)
 
 # Filter case samples to exclude HEBCS samples and filter by population
 case_samples = case_phenotypes %>% 
-  filter(fhnumber>1 & fhnumber!=888 & fhnumber!=777) %>% # Select samples with family history
-  #filter(AgeDiagIndex<50) %>% 
+  filter(fhnumber>1 & fhnumber!=888 & fhnumber!=777) %>% # Select samples with n family history
+  filter(famHist==1) %>% 
+  filter(AgeDiagIndex<50) %>% 
   #filter(ethnicityClass==1) %>%  # Select population (1 - European, 5 - East Asian)
   dplyr::select(c(BRIDGES_ID)) %>% 
   mutate(sex=2) %>% # Data only includes female samples
@@ -50,10 +57,6 @@ case_samples = case_phenotypes %>%
 
 # Create a sample list to create the PED files with
 sample_list = control_samples %>% rbind(case_samples)
-
-# Read the per_sample summary file to generate the PED files from
-per_sample = read_tsv("~/Desktop/thesis/bridges_results/per_sample_summary.tsv") %>% 
-  mutate(variant=str_remove(variant, "chr"))
 
 samples_with_pathogenic=per_sample %>% 
   filter(variant %in% pathogenic_variants$variant) 
@@ -84,8 +87,8 @@ ped_out = ped_out %>%
                 ~replace_na(., sprintf("%1$s%1$s", str_split(cur_column(), "-", simplify = TRUE)[[3]]))))
 
 # Write the generated PED/MAP files to disk
-write_tsv(ped_out, "assoc_analysis_no_pathogenic_fam_hist_1st_dg.ped", na="00", col_names = FALSE)
-write_tsv(map_out, "assoc_analysis_no_pathogenic_fam_hist_1st_dg.map", na="00", col_names = FALSE)
+write_tsv(ped_out, "new_assoc/u50_multi_fam_hist_1dg_no_pathogenic_recurrent.ped", na="00", col_names = FALSE)
+write_tsv(map_out, "new_assoc/u50_multi_fam_hist_1dg_no_pathogenic_recurrent.map", na="00", col_names = FALSE)
 
 
 

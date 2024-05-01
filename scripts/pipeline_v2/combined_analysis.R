@@ -10,11 +10,12 @@ library(tidyverse)
 library(ggplot2)
 library(org.Hs.eg.db)
 library(DBI)
+library(forcats)
 
 setwd("~/Desktop/thesis")
 
 ################################## SELECT CORRECT DATA TYPE ##################################
-data_type = "bridges"
+data_type = "swea"
 ##############################################################################################
 
 if(data_type=="swea"){
@@ -27,19 +28,21 @@ if(data_type=="swea"){
   
   # Read the list of genes targeted for the analysis
   gene_list=read_tsv("swea_gene_list.txt", col_names = F)
+  
+  canonical_transcripts = read_tsv("swea_canonical_transcripts.tsv")
 }
 
 if(data_type=="bridges"){
   # Read sample phenotype annotations 
-  case_phenotypes = read_tsv("association_analysis/bridges_annotation/cases_phenotypes.txt") %>% 
+  case_phenotypes = read_tsv("bridges_annotation/cases_phenotypes.txt") %>% 
     filter(study!="HEBCS") # HEBCS withdrew from BCAC
-  control_phenotypes = read_tsv("association_analysis/bridges_annotation/controls_phenotypes.txt") %>% 
+  control_phenotypes = read_tsv("bridges_annotation/controls_phenotypes.txt") %>% 
     filter(study!="HEBCS") # HEBCS withdrew from BCAC
   
   # Filter control samples to exclude HEBCS samples
   control_samples = control_phenotypes %>%
     dplyr::select(c(BRIDGES_ID))
-
+  
   # Filter case samples to exclude HEBCS samples
   case_samples = case_phenotypes %>%
     dplyr::select(c(BRIDGES_ID))
@@ -59,8 +62,15 @@ if(data_type=="bridges"){
     dplyr::select(variant) %>% 
     unique()
   
+  
+  per_transcript = per_transcript %>% filter(variant %in% variants_to_keep$variant)
+  per_variant = per_variant %>% filter(variant %in% variants_to_keep$variant)
+  per_sample = per_sample %>% filter(sampleID %in% sample_list$BRIDGES_ID)
+  
   # Read the list of genes targeted for the analysis
   gene_list=read_tsv("bridges_gene_list.txt", col_names = F)
+  
+  canonical_transcripts = read_tsv("bridges_canonical_transcripts.tsv")
 }
 
 # GET SYNONYMOUS GENE NAMES
@@ -70,10 +80,7 @@ sqlQuery='SELECT * FROM alias, gene_info WHERE alias._id == gene_info._id;'
 # execute the query on the database
 aliasSymbol=dbGetQuery(dbCon, sqlQuery)
 # subset to get your results
-gene_list=aliasSymbol %>% dplyr::select(alias_symbol, symbol) %>% filter(symbol %in% gene_list$X1)
-
-# Run the script that identifies all protein coding transcripts of the targeted genes
-source("~/Dev/familial_bc/scripts/get_canonical_transcript.R")
+gene_list=aliasSymbol %>% dplyr::select(alias_symbol, symbol) %>% filter(symbol %in% gene_list$X1 | alias_symbol %in% gene_list$X1)
 
 # Read the list of known breast cancer genes
 bc_genes=read_tsv("known_BC_genes.txt", col_names = F)
@@ -83,70 +90,57 @@ transcripts = per_transcript %>%
   filter(gene %in% gene_list$alias_symbol)
 
 # Filter the results and calculate p-values and FDR from phyloP scores.
+on_target_variants = per_variant %>%
+  separate_longer_delim(cols=gene, delim="|") %>%
+  filter(gene %in% gene_list$alias_symbol) %>% 
+  dplyr::select(variant) %>% 
+  unique()
+
 variants = per_variant %>%
   separate_longer_delim(cols=gene, delim="|") %>%
-  filter(gene %in% gene_list$alias_symbol) %>%
+  filter(variant %in% on_target_variants$variant) %>% 
   mutate(p=10**-abs(phyloP)) %>%
   mutate(FDR=p.adjust(p, method="BH", n=2861327195)) # Correcting for all non-N bases in hg19
 
 # Subset only the synonymous variants, determine if phyloP scores are significant
-synonymous_variants = variants %>%
-  filter(str_detect(type, "synonymous")) %>%
-  mutate(phyloP_adj_sig = if_else(FDR<=0.05, TRUE, FALSE)) %>% 
-  mutate(phyloP_raw_sig = if_else(p<0.05, TRUE, FALSE))
+variants = variants %>%
+  mutate(phyloP_sig = if_else(p<0.05, TRUE, FALSE))
 
-# Subset only the synonymous variants, remove transcript if NMD transcript variant, filter non-protein coding transcripts
-synonymous_transcripts = transcripts %>%
-  filter(str_detect(variant_type, "synonymous")) %>%
-  filter(!str_detect(variant_type, "NMD_transcript_variant")) %>% 
+# Filter out consequences for non-canonical transcripts
+transcripts = transcripts %>%
   filter(transcript_id %in% canonical_transcripts$ensembl_transcript_id)
 
 # Select wanted columns from the synonymous transcript dataframe 
-synonymous_transcripts = synonymous_transcripts %>%
-  dplyr::select(c(variant, transcript_id, variant_type, codon, encode, rscu, ref_ese, alt_ese, ref_ess, alt_ess, miRNA_target))
+transcripts = transcripts %>%
+  dplyr::select(c(variant, gene, transcript_id, strand, variant_type, codon, encode, rscu, ref_ese, alt_ese, ref_ess, alt_ess, miRNA_target))
 
 # Join the per_transcript data to per_variant data - reformat and parse ClinVar info
-synonymous_variants = synonymous_transcripts %>%
-  left_join(synonymous_variants %>% dplyr::select(-type), by = join_by(variant==variant)) %>%
+variants = transcripts %>%
+  left_join(variants %>% dplyr::select(-type), by = join_by(variant==variant, gene==gene)) %>%
   mutate(type=variant_type) %>%
-  filter(!is.na(phyloP)) %>% # Remove variants that are not SNVs
+  dplyr::select(-variant_type) %>% 
   mutate(pathogenicity=if_else(!is.na(ClinVar), str_split(ClinVar, "\\|", simplify = TRUE)[,7], "Unreported")) %>% 
   mutate(clinvar_phenotype=if_else(!is.na(ClinVar),str_split(ClinVar, "\\|", simplify=TRUE)[,14], "Unreported")) %>% 
   mutate(clinvar_review_status=if_else(!is.na(ClinVar),str_split(ClinVar, "\\|", simplify=TRUE)[,25], "Unreported")) %>% 
   mutate(phenotype_BOC=if_else(str_detect(clinvar_phenotype, 
-                              "Breast|breast|Ovarian|ovarian|Hereditary_cancer-predisposing_syndrome|Lynch_syndrome"), TRUE, FALSE)) %>% 
+                                          "Breast|breast|Ovarian|ovarian|Hereditary_cancer-predisposing_syndrome|Lynch_syndrome|Li-Fraumeni|Peutz-Jeghers|Cowden"), TRUE, FALSE)) %>% 
   mutate(clinvar_id=if_else(!is.na(ClinVar), str_split(ClinVar, "\\|", simplify=TRUE)[,3], "Unreported"))
 
 # Collapse the variant list, so that redundant entries are removed
-synonymous_variants_collapsed = synonymous_variants %>% 
-  group_by(across(-c(transcript_id, codon, type))) %>% 
-  summarise(transcript_id=paste(transcript_id, collapse="|"),
-            codon=paste(codon, collapse="|"),
+variants_collapsed = variants %>% 
+  group_by(across(-c(codon, type))) %>% 
+  summarise(codon=paste(codon, collapse="|"),
             type=paste(type, collapse="|")) %>% 
-            relocate(any_of(c("gene", "known_variation", "type", "AF", "EUR_AF", 
-                              "SweAF", "rscu", "phyloP", "phyloP_sig", "ClinVar")), 
-                     .after=variant) %>% 
-  ungroup()
+  relocate(any_of(c("gene", "known_variation", "type", "AF", "EUR_AF", 
+                    "SweAF", "rscu", "phyloP", "phyloP_sig", "ClinVar")), 
+           .after=variant) %>% 
+  ungroup() %>%
+  unique()
 
-# Calculate the quantiles for the dRSCU values and select wanted quantiles
-rscu_quantiles= quantile(synonymous_variants_collapsed$rscu, probs=seq(0,1,0.05)) %>% 
-  as.data.frame() %>% 
-  rownames_to_column()
-
-colnames(rscu_quantiles)=c("quantiles", "rscu")
-
-rscu_quantiles = rscu_quantiles %>% 
-  filter(quantiles %in% c("5%", "10%", "20%", "30%", "50%", "70%", "80%", "90%", "95%"))
-  
-# Generate a density plot of the dRSCU values and show the quantiles
-ggplot(synonymous_variants_collapsed) + 
-  geom_density(aes(x=rscu)) + 
-  geom_vline(data=rscu_quantiles, aes(xintercept=rscu), linetype=2, color="grey")
-
-synonymous_variants_final=synonymous_variants_collapsed 
+variants_final=variants_collapsed 
 
 # Select pathogenic variants from list of all synonymous variants - pathogenic in breast/ovarian cancer
-pathogenic_BOC_variants = synonymous_variants_final %>% 
+pathogenic_BOC_variants = variants_final %>% 
   filter((pathogenicity=="Pathogenic" & phenotype_BOC) | (pathogenicity=="Likely_pathogenic" & phenotype_BOC) | (pathogenicity=="Pathogenic/Likely_pathogenic" & phenotype_BOC))
 
 samples_with_pathogenic = per_sample %>% 
@@ -154,11 +148,15 @@ samples_with_pathogenic = per_sample %>%
   group_by(sampleID) %>% 
   summarise(n=n())
 
-# Select non-pathogenic variants and VUS from list of all synonymous variants - non-pathogenic in breast/ovarian cancer
-synonymous_variants_final = synonymous_variants_final %>%
-  filter(!variant %in% pathogenic_BOC_variants$variant)
-
-synonymous_variants_final = synonymous_variants_final %>% 
+variants_final = variants_final %>% 
+  mutate(type=str_replace_all(type, "_", " ")) %>%
+  mutate(type=str_replace_all(type, "utr", "UTR")) %>% 
+  mutate(type=str_replace_all(type, " prime", "'")) %>% 
+  mutate(pathogenicity=case_when(pathogenicity=="Benign" | pathogenicity=="Likely_benign" | pathogenicity=="Benign/Likely_benign"~"Benign/Likely_benign",
+                                 pathogenicity=="Pathogenic" | pathogenicity=="Likely_pathogenic" | pathogenicity=="Pathogenic/Likely_pathogenic"~"Pathogenic/Likely_pathogenic", 
+                                 pathogenicity=="Conflicting_interpretations_of_pathogenicity"~"Conflicting_interpretations",
+                                 pathogenicity=="Uncertain_significance"~"Uncertain_significance",
+                                 pathogenicity=="Unreported"~"Unreported", .default = "Other")) %>%
   mutate(ESS=case_when(is.na(ref_ess) & !is.na(alt_ess)~"Create",
                        !is.na(ref_ess) & is.na(alt_ess)~"Remove",
                        !is.na(ref_ess) & !is.na(alt_ess)~"Alter",
@@ -170,11 +168,24 @@ synonymous_variants_final = synonymous_variants_final %>%
   mutate(ESS_ESE_overlap=if_else(!is.na(ESS) | !is.na(ESE), TRUE, FALSE)) %>% 
   mutate(known=if_else(!is.na(known_variation), TRUE, FALSE)) %>% 
   mutate(AF_reported=if_else(!is.na(AF) & !is.na(EUR_AF) & !is.na(Swe_AF), TRUE, FALSE)) %>% 
-  mutate(splice_region_overlap=if_else(str_detect(type, "splice_region_variant"), TRUE, FALSE)) %>% 
+  mutate(splice_region_overlap=if_else(str_detect(type, "splice"), TRUE, FALSE)) %>% 
   mutate(RBS_overlap=if_else(!is.na(encode), TRUE, FALSE))
 
+
+synonymous = variants_final %>% filter(str_detect(type, "synonymous"))
+
+# Calculate the quantiles for the dRSCU values and select wanted quantiles
+rscu_quantiles= quantile(synonymous$rscu, probs=seq(0,1,0.05)) %>% 
+  as.data.frame() %>% 
+  rownames_to_column()
+
+colnames(rscu_quantiles)=c("quantiles", "rscu")
+
+rscu_quantiles = rscu_quantiles %>% 
+  filter(quantiles %in% c("5%", "10%", "20%", "30%", "50%", "70%", "80%", "90%", "95%"))
+
 # Rank variants based on chosen thresholds 
-synonymous_variants_final = synonymous_variants_final %>% 
+synonymous = synonymous %>% 
   mutate(clinvar_review_score=case_when(clinvar_review_status=="Unreported"~0,
                                         clinvar_review_status=="practice guideline"~4,
                                         clinvar_review_status=="reviewed_by_expert_panel"~3,
@@ -187,9 +198,10 @@ synonymous_variants_final = synonymous_variants_final %>%
                                 pathogenicity=="not_provided"~0,
                                 pathogenicity=="Conflicting_interpretations_of_pathogenicity"~1,
                                 pathogenicity=="Uncertain_significance"~1,
-                                (pathogenicity=="Pathogenic" | pathogenicity=="Likely_pathogenic" | pathogenicity=="Pathogenic/Likely_pathogenic")~2,
-                                (pathogenicity=="Benign" | pathogenicity=="Likely_benign" | pathogenicity=="Benign/Likely_benign") & !phenotype_BOC~3,
-                                (pathogenicity=="Benign" | pathogenicity=="Likely_benign" | pathogenicity=="Benign/Likely_benign") & phenotype_BOC~4)) %>% 
+                                pathogenicity=="Pathogenic/Likely_pathogenic" & !phenotype_BOC~1,
+                                pathogenicity=="Pathogenic/Likely_pathogenic" & phenotype_BOC~2,
+                                pathogenicity=="Benign/Likely_benign" & !phenotype_BOC~3,
+                                pathogenicity=="Benign/Likely_benign" & phenotype_BOC~4)) %>% 
   mutate(rscu_rank=case_when(rscu<=rscu_quantiles$rscu[rscu_quantiles$quantiles=="5%"]~1,
                              rscu<=rscu_quantiles$rscu[rscu_quantiles$quantiles=="10%"] & rscu>rscu_quantiles$rscu[rscu_quantiles$quantiles=="5%"]~2,
                              rscu<=rscu_quantiles$rscu[rscu_quantiles$quantiles=="20%"] & rscu>rscu_quantiles$rscu[rscu_quantiles$quantiles=="10%"]~3,
@@ -206,10 +218,10 @@ synonymous_variants_final = synonymous_variants_final %>%
   mutate(AF_rank=if_else(AF_reported, 1+AF+EUR_AF+Swe_AF, 0)) %>% 
   mutate(splice_region_rank=if_else(splice_region_overlap, 0, 3)) %>% 
   mutate(RBS_rank=if_else(RBS_overlap, 0, 1)) %>%
-  mutate(phyloP_rank=if_else(phyloP_raw_sig & phyloP>0, 0, 1))
+  mutate(phyloP_rank=if_else(phyloP_sig & phyloP>0, 0, 1))
 
 if(data_type=="swea"){
-  synonymous_variants_final = synonymous_variants_final %>% 
+  synonymous_variants_final = synonymous %>% 
     separate_longer_delim(samples, "|") %>% 
     mutate(with_pathogenic=if_else(samples %in% samples_with_pathogenic$sampleID, 1, 0)) %>% 
     group_by(across(-c(samples, with_pathogenic))) %>% 
@@ -221,20 +233,21 @@ if(data_type=="swea"){
   
   synonymous_variants_final = synonymous_variants_final %>% 
     mutate(rank=ESS_ESE_rank+known_rank+rscu_rank+AF_rank+splice_region_rank+RBS_rank+phyloP_rank+(clinvar_rank*clinvar_review_score)+risk_gene_rank+with_pathogenic) %>% 
-    arrange(rank)
-    
+    arrange(desc(pathogenicity), rank)
+  
   # Remove problematic variant -> custom annotation scripts cannot handle multiple alternate alleles at one location
   # only one such synonymous variant was found in the SWEA data, none in the BRIDGES data.
-  synonymous_variants_final = synonymous_variants_final %>%
-    filter(!(variant=="6-35423662-A-C,T" & codon=="ccA/ccC"))
-
-  synonymous_variants_final$variant[synonymous_variants_final$variant=="6-35423662-A-C,T"]="6-35423662-A-T"
+  # synonymous_variants_final = synonymous_variants_final %>%
+  #   filter(!(variant=="6-35423662-A-C,T" & codon=="ccA/ccC"))
+  # 
+  # synonymous_variants_final$variant[synonymous_variants_final$variant=="6-35423662-A-C,T"]="6-35423662-A-T"
+  
   # Export list of variatns as TSV file
   # write_tsv(synonymous_variants_final, file="swea_synonymous_list.tsv")
   # write_tsv(pathogenic_BOC_variants, file="swea_pathogenic_list.tsv")
 }
 if(data_type=="bridges"){
-  synonymous_variants_final = synonymous_variants_final %>%
+  synonymous_variants_final = synonymous %>%
     separate_longer_delim(samples, "|") %>% 
     mutate(n_cases=if_else(samples %in% case_phenotypes$BRIDGES_ID, 1, 0)) %>% 
     mutate(n_controls=if_else(samples %in% control_phenotypes$BRIDGES_ID, 1, 0)) %>% 
@@ -249,11 +262,10 @@ if(data_type=="bridges"){
     unique()
   
   synonymous_variants_final = synonymous_variants_final %>% 
-    filter(variant %in% variants_to_keep$variant) %>% 
     mutate(case_rank = ((n_cases-n_controls)/n_samples)*100) %>% 
     mutate(rank=ESS_ESE_rank+known_rank+rscu_rank+AF_rank+splice_region_rank+RBS_rank+phyloP_rank+(clinvar_rank*clinvar_review_score)+risk_gene_rank-case_rank+with_pathogenic) %>% 
-    arrange(rank)
-
+    arrange(desc(pathogenicity),rank)
+  
   # Export list of variatns as TSV file
   # write_tsv(synonymous_variants_final, file="bridges_synonymous_list.tsv")
   # write_tsv(pathogenic_BOC_variants, file="bridges_pathogenic_list.tsv")
