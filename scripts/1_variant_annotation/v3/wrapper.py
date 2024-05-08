@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import glob
 import sys
 import subprocess
@@ -82,22 +83,35 @@ def init_args():
             exit()
 
         # If specified output directory already exists, verify overwrite.
+        # If the directory doesn't exist, create directory.
         if os.path.isdir(args.output_directory):
             cont = ask_yn("The provided output directory already exists."
-                          "The pipeline will overwrite any existing files.\n"
+                          "The pipeline will remove any existing files.\n"
                           "Do you want to continue? (y/n): ")
             if not cont:
                 exit()
+
+            shutil.rmtree(args.output_directory)
+            os.mkdir(args.output_directory)
+
+        os.mkdir(args.output_directory)
 
     elif args.command == "setup":
 
         # If specified resources directory already exists, verify overwrite.
+        # If the directory doesn't exist, create directory.
         if os.path.isdir(args.directory):
             cont = ask_yn("The provided resources directory already exists."
-                          "The pipeline will overwrite any existing files.\n"
+                          "The pipeline will remove any existing files.\n"
                           "Do you want to continue? (y/n): ")
             if not cont:
                 exit()
+
+            shutil.rmtree(args.directory)
+            os.mkdir(args.directory)
+
+        else:
+            os.mkdir(args.directory)
 
     return args
 
@@ -119,12 +133,15 @@ def ask_yn(message):
     # Promt the question and record the response.
     response = input(message)
 
+    # Continue asking until the user response is either Y/y/N/n.
     while response not in ["N","n","Y","y"]:
         response = input("Invalid response. Please try again. (y/n): ")
 
+    # Convert response to boolean.
     response = answer_dict[response.strip()]
 
     return response
+
 
 def download_resources(directory):
     '''
@@ -138,14 +155,13 @@ def download_resources(directory):
         None.
     '''
 
-    if not os.path.isdir(directory):
-        os.mkdir(directory)
-
-    os.chdir(directory)
-
+    # Retrieve current script path.
     script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
+    # Formulate shell command to run setup.sh script.
     command = shlex.split("bash ${script}/setup.sh".format(script=script_path))
+
+    # Invoke a subprocess to run the setup script.
     subprocess.run(command)
 
 def unpack(args):
@@ -177,14 +193,18 @@ def poolProcesses(cores, func, args, quiet):
         None.
     '''
 
+    # Create a pool with the specified number of workers.
     p = multiprocessing.Pool(cores)
 
+    # Map processes to the pool for parallel processing. Display progress bar unless the
+    # --quiet option was specified.
     if not quiet:
         list(tqdm.tqdm(p.imap(func, args), total=len(args), ncols=term_width-10, ascii=" =", \
                        bar_format='{percentage:3.0f}%|{bar}|  [ {n_fmt}/{total_fmt} {elapsed} ]'))
     else:
         list(p.imap(func, args))
 
+    # Close the worker pool.
     p.close()
 
 def run_pipeline(input_directory, output_directory, resources_directory, \
@@ -211,36 +231,39 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         None.
     '''
 
-    if not os.path.isdir(output_directory):
-        os.mkdir(output_directory)
-
+    # If no particular parts of the pipeline were specified, run the whole pipeline.
     if not (filt or fs or vep or custom):
         filt = fs = vep = custom = True
 
+    # Retrieve current script path.
     script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
+    # Base output directory.
     base_output_directory = output_directory.rstrip("/")
 
+    # Subdirectories for outputs from different parts of the pipeline.
     io_dictionary = {"none":input_directory,
                     "filt":"{}/1_Filtering/Merged".format(base_output_directory),
                     "fs":"{}/2_FlankingSequence".format(base_output_directory),
                     "vep":"{}/3_VEPAnnotations".format(base_output_directory),
                     "custom":"{}/4_CustomAnnotations".format(base_output_directory)}
 
+    # Set the previous operation to "none"
     prev_operation = "none"
 
+    #============================ 1. FILTERING ============================
     if filt:
 
+        # Print line to show the beginning of the filtering step.
         print("{s:=^{n}}".format(n=term_width, s=" 1. Filtering variants "))
 
+        # Set input/output directory
         input_directory = io_dictionary[prev_operation]
         output_directory = "{}/1_Filtering".format(base_output_directory)
 
-
-        if not os.path.isdir(output_directory):
-            os.mkdir(output_directory)
-            os.mkdir("{}/SNVs".format(output_directory))
-            os.mkdir("{}/Indels".format(output_directory))
+        os.mkdir(output_directory)
+        os.mkdir("{}/SNVs".format(output_directory))
+        os.mkdir("{}/Indels".format(output_directory))
 
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
 
@@ -308,8 +331,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["fs"]
 
-        if not os.path.isdir(output_directory):
-            os.mkdir(output_directory)
+        os.mkdir(output_directory)
 
         os.mkdir("{}/temp".format(output_directory))
 
@@ -334,8 +356,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["vep"]
 
-        if not os.path.isdir(output_directory):
-            os.mkdir(output_directory)
+        os.mkdir(output_directory)
 
         # List all VCF files to annotate in the provided directory
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
@@ -358,8 +379,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         input_directory = io_dictionary[prev_operation]
         output_directory = io_dictionary["custom"]
 
-        if not os.path.isdir(output_directory):
-            os.mkdir(output_directory)
+        os.mkdir(output_directory)
 
         # List all VCF files to annotate in the provided directory
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
