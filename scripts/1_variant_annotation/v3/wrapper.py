@@ -19,7 +19,7 @@ def init_args():
     Arguments:
         None.
     Returns:
-        args (Object): Parsed arguments of various types.
+        args (object): Parsed arguments of various types.
     '''
 
     # Initialize an argparse.ArgumentParser object and parse command-line arguments.
