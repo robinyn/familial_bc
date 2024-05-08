@@ -8,7 +8,20 @@ import multiprocessing
 import tqdm
 import EES_ESE_annotation as custom
 
+#################### FUNCTION DEFINITIONS ####################
+
 def init_args():
+    '''
+    Initialize and parse command-line arguments using the Argparse module
+    and verify their validity.
+
+    Arguments:
+        None.
+    Returns:
+        args (Object): Parsed arguments of various types.
+    '''
+
+    # Initialize an argparse.ArgumentParser object and parse command-line arguments.
     parser = argparse.ArgumentParser(prog = "Variant Annotation Pipeline V3")
     subparser = parser.add_subparsers(required=True, dest="command")
 
@@ -30,7 +43,7 @@ def init_args():
                                  help=("Directory and name of the text file containing filter names"
                                        "and values to be used to filter indels. Follow GATK arguments file"
                                        "format."))
-    annotate_parser.add_argument('--prog', action="store_true", default=False)
+    annotate_parser.add_argument('-q', '--quiet', action="store_true", default=False)
     annotate_parser.add_argument('--vep', action="store_true", default=False)
     annotate_parser.add_argument('--custom', action="store_true", default=False)
     annotate_parser.add_argument('--fs', action="store_true", default=False)
@@ -41,41 +54,89 @@ def init_args():
     setup_parser.add_argument('-d', '--directory', required=True,
                               help=("Directory to download the resource files to. The downloaded dependencies will "
                                     "be installed in a folder named 'bin' inside this directory."))
-    setup_parser.add_argument('--swegen',
-                              help="Directory of the SweGen data.")
     args = parser.parse_args()
 
+    # Verify parsed arguments.
     if args.command == "annotate":
+
+        # Check if input data directory exists
         if not os.path.isdir(args.data_directory):
             print("ERROR: Provided directory for the raw data does not exist.")
             exit()
+
+        # Check if resources directory exists
         if not os.path.isdir(args.resources_directory):
             print("ERROR: Provided directory for the resources files does not exist.")
             exit()
-        if os.path.isdir(args.output_directory):
-            response = ask_yn("The provided output directory already exists. Do you want to continue? (y/n): ")
 
-            if response in ["n","N"]:
+        # Check if the SNP filters file exists
+        if not os.path.isfile(args.snp_filter):
+            print("ERROR: SNP filter filter not found. Please check that the resources/snp_filters.txt "
+                  "file exists or provide the directory and file name of the filters using the option '--snp-filter'.")
+            exit()
+
+        # Check if the indel filters file exists
+        if not os.path.isfile(args.indel_filter):
+            print("ERROR: Indel filter filter not found. Please check that the resources/indel_filters.txt "
+                  "file exists or provide the directory and file name of the filters using the option '--indel-filter'.")
+            exit()
+
+        # If specified output directory already exists, verify overwrite.
+        if os.path.isdir(args.output_directory):
+            cont = ask_yn("The provided output directory already exists."
+                          "The pipeline will overwrite any existing files.\n"
+                          "Do you want to continue? (y/n): ")
+            if not cont:
                 exit()
 
     elif args.command == "setup":
-        if os.path.isdir(args.directory):
-            response = ask_yn("The provided directory already exists. Do you want to continue? (y/n): ")
 
-            if response in ["n","N"]:
+        # If specified resources directory already exists, verify overwrite.
+        if os.path.isdir(args.directory):
+            cont = ask_yn("The provided resources directory already exists."
+                          "The pipeline will overwrite any existing files.\n"
+                          "Do you want to continue? (y/n): ")
+            if not cont:
                 exit()
 
     return args
 
 def ask_yn(message):
+    '''
+    Promt a Y/N question and continue asking until the user response
+    is either Y/y/N/n.
+
+    Arguments:
+        message (str): the promt to be printed.
+    Returns:
+        response (bool): the user response converted into a boolean.
+                         True for yes, False for no.
+    '''
+
+    # Dictionary to convert user response to boolean values.
+    answer_dict = {"N":False, "n":False, "Y":True, "y":True}
+
+    # Promt the question and record the response.
     response = input(message)
 
     while response not in ["N","n","Y","y"]:
         response = input("Invalid response. Please try again. (y/n): ")
 
+    response = answer_dict[response.strip()]
+
     return response
 
 def download_resources(directory):
+    '''
+    Wrapper function to download all publically available resource files using the setup.sh script.
+    The script will download the most up-to-date files, whenever possible.
+    SweGen allele frequency data is not publically available and will not be downloaded.
+
+    Arguments:
+        directory (str): the directory to download the resource files to,
+    Returns:
+        None.
+    '''
 
     if not os.path.isdir(directory):
         os.mkdir(directory)
@@ -84,29 +145,71 @@ def download_resources(directory):
 
     script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-    command = shlex.split("bash ${script_path}/setup.sh")
+    command = shlex.split("bash ${script}/setup.sh".format(script=script_path))
     subprocess.run(command)
 
 def unpack(args):
+    '''
+    Unpacks arguments to pass to the ESE_ESS_annotation function. Required for
+    passing multiple ESE_ESS_annotation processes to the multiprocessing pool.
+
+    Arguments:
+        args (str:list): list of output/resource directories and file name of
+                         the VCF to annotate.
+    Returns:
+        custom.ESE_ESS_annotation(*args)
+    '''
+
     return custom.ESE_ESS_annotation(*args)
 
-def poolProcesses(cores, func, args, prog):
+def poolProcesses(cores, func, args, quiet):
+    '''
+    Pool processes for parallele processing using the Multiprocessing module and
+    initiate processing. The function will also display a progress bar using the
+    tqdm module.
+
+    Arguments:
+        cores (int): number of cores to use for parallel processing.
+        func (func): name of the function to call.
+        args (str:list): list of arguments to pass to the function.
+        quiet (bool): suppresses the progress bar if set to true.
+    Returns:
+        None.
+    '''
 
     p = multiprocessing.Pool(cores)
 
-    if prog:
-        list(tqdm.tqdm(p.imap(func, args), total=len(args), ncols=term_width-10, ascii=" =", bar_format='{percentage:3.0f}%|{bar}|  [ {n_fmt}/{total_fmt} {elapsed} ]'))
+    if not quiet:
+        list(tqdm.tqdm(p.imap(func, args), total=len(args), ncols=term_width-10, ascii=" =", \
+                       bar_format='{percentage:3.0f}%|{bar}|  [ {n_fmt}/{total_fmt} {elapsed} ]'))
     else:
         list(p.imap(func, args))
 
-    # p.map(func, args)
-
     p.close()
 
-    return 0
-
 def run_pipeline(input_directory, output_directory, resources_directory, \
-                 cores, filt, fs, vep, custom, snp_filter, indel_filter, prog):
+                 cores, filt, fs, vep, custom, snp_filter, indel_filter, quiet):
+
+    '''
+    Wrapper function to run the pipeline using the different filtering/annotation
+    scripts. The function will run the entire pipeline, unless options to only run
+    specific parts are provided.
+
+    Arguments:
+        input_directory (str): directory of the input VCF files to be annotated.
+        output_directory (str): directory for the annotated output VCF files.
+        resources_directory (str): directory where the resource files are located.
+        cores (int): number of cores to use.
+        filt (bool): option to run the filtering step.
+        fs (bool): option to run the flanking sequence retrieval step.
+        vep (bool): option to run the VEP annotation step.
+        custom (bool): option to run the custom annotation step.
+        snp_filter (str): directory and name of the SNP filtering options file.
+        indel_filter (str): directory and name of the indel filtering options file.
+        quiet (bool): suppresses the progress bar if set to true.
+    Returns:
+        None.
+    '''
 
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
@@ -148,9 +251,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("bash {}/filtering.sh separateVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh separateVariants {} {} {} {}".format(script_path, \
+                                                                                                  file, output_directory, snp_filter, indel_filter)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         print("Filtering SNVs.")
 
@@ -161,9 +265,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("bash {}/filtering.sh filterSNVs {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh filterSNVs {} {} {} {}".format(script_path, \
+                                                                                            file, output_directory, snp_filter, indel_filter)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         print("Filtering indels.")
 
@@ -174,9 +279,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("bash {}/filtering.sh filterIndels {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh filterIndels {} {} {} {}".format(script_path, \
+                                                                                              file, output_directory, snp_filter, indel_filter)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         print("Merging filtered variants.")
 
@@ -187,9 +293,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("bash {}/filtering.sh mergeVariants {} {} {} {}".format(script_path, file, output_directory, snp_filter, indel_filter)))
+            command.append(shlex.split("bash {}/filtering.sh mergeVariants {} {} {} {}".format(script_path, \
+                                                                                               file, output_directory, snp_filter, indel_filter)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         prev_operation = "filt"
 
@@ -215,7 +322,7 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         for file in list_of_files:
             command.append(shlex.split("bash {}/flanking_sequences.sh {} {}".format(script_path, file, output_directory)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         print("Flanking sequence retrieval complete.")
 
@@ -238,9 +345,10 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         command = []
 
         for file in list_of_files:
-            command.append(shlex.split("bash {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, file, output_directory, resources_directory)))
+            command.append(shlex.split("bash {}/vep_annotation.sh -i {} -o {} -r {}".format(script_path, \
+                                                                                            file, output_directory, resources_directory)))
 
-        poolProcesses(cores, subprocess.run, command, prog)
+        poolProcesses(cores, subprocess.run, command, quiet)
 
         prev_operation = "vep"
 
@@ -263,13 +371,15 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         for file in list_of_files:
             command.append((file, output_directory, resources_directory))
 
-        poolProcesses(cores, unpack, command, prog)
+        poolProcesses(cores, unpack, command, quiet)
 
         prev_operation = "custom"
 
-    return 0
+
+######################### MAIN LOGIC #########################
 
 if __name__ == "__main__":
+
     term_width = os.get_terminal_size().columns - 20
 
     print("Variant Annotation Pipeline V3\n")
@@ -291,7 +401,7 @@ if __name__ == "__main__":
         run_pipeline(args.data_directory, args.output_directory, \
                      args.resources_directory, args.cores, \
                      args.filt, args.fs, args.vep, args.custom, \
-                     args.snp_filter, args.indel_filter, args.prog)
+                     args.snp_filter, args.indel_filter, args.quiet)
 
     elif args.command == "setup":
         download_resources(directory=args.directory)

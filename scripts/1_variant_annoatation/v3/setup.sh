@@ -41,7 +41,7 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh37/clinvar.vcf.gz.tbi
 mkdir /home/resources/vep_cache
 cd /home/resources/vep_cache
 
-# Download cache files for VEP (VEP v.111)
+# Download cache files for VEP (VEP v.110)
 wget https://ftp.ensembl.org/pub/release-110/variation/indexed_vep_cache/homo_sapiens_vep_110_GRCh37.tar.gz
 tar xzf homo_sapiens_vep_110_GRCh38.tar.gz
 

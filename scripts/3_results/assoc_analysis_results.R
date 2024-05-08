@@ -88,10 +88,9 @@ u50_multi_fdg_no_path_recur_significant = u50_multi_fdg_no_path_recur_significan
   dplyr::select(c(SNP, A1, A2, F_A, F_U, OR, UNADJ, FDR_BH)) %>% 
   left_join(synonymous_table, by=join_by(SNP==variant))
 
-
 # 
-# variants = fdg_no_path_recur_significant %>%
-#   filter(OR > 1) %>% filter(ESS_ESE_overlap)
+# variants = u50_multi_fdg_no_path_recur_significant %>%
+#   filter(OR > 1) %>% filter(phyloP_sig, phyloP>0)
 # 
 # sampleIDs = synonymous_table %>%
 #   filter(variant %in% variants$SNP) %>%
