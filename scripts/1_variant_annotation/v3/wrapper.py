@@ -231,39 +231,8 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
         None.
     '''
 
-    # If no particular parts of the pipeline were specified, run the whole pipeline.
-    if not (filt or fs or vep or custom):
-        filt = fs = vep = custom = True
-
-    # Retrieve current script path.
-    script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-
-    # Base output directory.
-    base_output_directory = output_directory.rstrip("/")
-
-    # Subdirectories for outputs from different parts of the pipeline.
-    io_dictionary = {"none":input_directory,
-                    "filt":"{}/1_Filtering/Merged".format(base_output_directory),
-                    "fs":"{}/2_FlankingSequence".format(base_output_directory),
-                    "vep":"{}/3_VEPAnnotations".format(base_output_directory),
-                    "custom":"{}/4_CustomAnnotations".format(base_output_directory)}
-
-    # Set the previous operation to "none"
-    prev_operation = "none"
-
     #============================ 1. FILTERING ============================
     if filt:
-
-        # Print line to show the beginning of the filtering step.
-        print("{s:=^{n}}".format(n=term_width, s=" 1. Filtering variants "))
-
-        # Set input/output directory
-        input_directory = io_dictionary[prev_operation]
-        output_directory = "{}/1_Filtering".format(base_output_directory)
-
-        os.mkdir(output_directory)
-        os.mkdir("{}/SNVs".format(output_directory))
-        os.mkdir("{}/Indels".format(output_directory))
 
         list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
 
@@ -395,6 +364,27 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
         prev_operation = "custom"
 
+def run(div_line, div_main, input_directory, output_directory, cores, quiet, cmd_process, cmd_string, args):
+
+    if div_main:
+        print("{s:=^{n}}".format(n=term_width, s=" {} ".format(div_line)))
+
+    for directory in output_directory:
+        os.makedirs(directory)
+
+    # List all VCF files to annotate in the provided directory
+    list_of_files = glob.glob("{data}/**/*.vcf".format(data=input_directory), recursive=True)
+
+    print("{} VCF files to process.".format(len(list_of_files)))
+
+    command = []
+
+    for file in list_of_files:
+        command.append(shlex.split(cmd_string.format(*args)))
+
+    poolProcesses(cores, cmd_process, command, quiet)
+
+    return 0
 
 ######################### MAIN LOGIC #########################
 
@@ -408,7 +398,6 @@ if __name__ == "__main__":
 
     args = init_args()
 
-
     if args.command == "annotate":
 
         print("Data directory: {}".format(args.data_directory))
@@ -417,6 +406,37 @@ if __name__ == "__main__":
         print("Number of cores: {}".format(args.cores))
         print("SNP filter file: {}".format(args.snp_filter))
         print("INDEL filter file: {}\n".format(args.indel_filter))
+
+
+        # If no particular parts of the pipeline were specified, run the whole pipeline.
+        if not (args.filt or args.fs or args.vep or args.custom):
+            args.filt = args.fs = args.vep = args.custom = True
+
+        # Retrieve current script path.
+        script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+        # Base output directory.
+        base_output_directory = args.output_directory.rstrip("/")
+
+        # Subdirectories for outputs from different parts of the pipeline.
+        io_dictionary = {"none":args.input_directory,
+                        "filt":"{}/1_Filtering/Merged".format(base_output_directory),
+                        "fs":"{}/2_FlankingSequence".format(base_output_directory),
+                        "vep":"{}/3_VEPAnnotations".format(base_output_directory),
+                        "custom":"{}/4_CustomAnnotations".format(base_output_directory)}
+
+        # Set the previous operation to "none"
+        prev_operation = "none"
+
+        if args.filt:
+            input_directory = io_dictionary[prev_operation]
+            output_directory = "{}/1_Filtering".format(base_output_directory)
+
+            os.mkdir("{}/SNVs".format(output_directory))
+            os.mkdir("{}/Indels".format(output_directory))
+
+            run("1. Filtering variants", True, input_directory, output_directory, args.cores, args.quiet)
+
 
         run_pipeline(args.data_directory, args.output_directory, \
                      args.resources_directory, args.cores, \
