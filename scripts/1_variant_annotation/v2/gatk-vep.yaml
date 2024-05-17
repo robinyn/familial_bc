@@ -1,0 +1,17 @@
+name: gatk-vep
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - perl-bio-bigfile
+  - perl-bio-db-hts
+  - vcftools
+  - perl-vcftools-vcf
+  - samtools
+  - screen
+  - ensembl-vep=110
+  - gatk4=4.4.0.0
+  - mysql
+  - plink=1.90
