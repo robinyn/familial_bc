@@ -37,7 +37,6 @@ cd /home/resources
 wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh37/clinvar.vcf.gz
 wget https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh37/clinvar.vcf.gz.tbi
 
-
 mkdir /home/resources/vep_cache
 cd /home/resources/vep_cache
 

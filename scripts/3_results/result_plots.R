@@ -177,6 +177,18 @@ df_summary = df %>%
 df = df %>% 
   mutate(type = if_else(type %in% df_summary$type, "Other", type)) %>% 
   mutate(data = factor(data, levels=c("SWEA", "BRIDGES")))
+
+test_df = df %>% 
+  filter(pathogenicity=="Pathogenic/Likely_pathogenic" | pathogenicity=="Benign/Likely_benign") %>% 
+  filter(data=="SWEA")
+
+wilcox.test(test_df$phyloP~test_df$pathogenicity)
+
+test_df = df %>% 
+  filter(pathogenicity=="Pathogenic/Likely_pathogenic" | pathogenicity=="Benign/Likely_benign") %>% 
+  filter(data=="BRIDGES")
+
+wilcox.test(test_df$phyloP~test_df$pathogenicity)
   
 ggplot(df %>% 
          filter(!is.na(phyloP)) %>% 
@@ -214,12 +226,6 @@ ggplot(df %>%
         strip.text=element_text(size=18, hjust=0)) +
   facet_wrap("data")
 
-kruskal.test()
-
-# t.test(variants_final$phyloP[variants_final$pathogenicity=="Unreported"], 
-#        variants_final$phyloP[variants_final$pathogenicity=="Other"])
-
-
 ######################### RSCU - ClinVar #########################
 
 df = swea %>% dplyr::select(variant, type, pathogenicity, rscu) %>% 
@@ -232,9 +238,34 @@ df = swea %>% dplyr::select(variant, type, pathogenicity, rscu) %>%
   mutate(data = factor(data, levels=c("SWEA", "BRIDGES"))) %>% 
   mutate(pathogenicity=str_replace(pathogenicity, "_", " "))
 
+test_df = df %>% 
+  filter(pathogenicity=="Pathogenic/Likely pathogenic" | pathogenicity=="Benign/Likely benign") %>% 
+  filter(data=="SWEA")
+wilcox.test(test_df$rscu~test_df$pathogenicity)
+
+test_df = df %>% 
+  filter(pathogenicity=="Pathogenic/Likely pathogenic" | pathogenicity=="Benign/Likely benign") %>% 
+  filter(data=="BRIDGES")
+wilcox.test(test_df$rscu~test_df$pathogenicity)
+
 ggplot(df %>% filter(!is.na(rscu)),
-       aes(y=reorder(pathogenicity, rscu, mean), x=rscu, fill=pathogenicity)) +
-  geom_density_ridges(quantile_lines=TRUE, quantile_fun=mean) +
+       aes(y=reorder(pathogenicity, rscu, mean), x=rscu, fill=pathogenicity, height=stat(count))) +
+  geom_density_ridges(quantile_lines=TRUE, quantile_fun=mean, stat="density", aes(scale=0.9)) +
+  plot_theme +
+  labs(x="dRSCU", y="Clinical significance") +
+  theme(legend.position = "none",
+        strip.background = element_blank(),
+        strip.text=element_text(size=18, hjust=0)) +
+  facet_wrap("data", scales="free_y", nrow=2) +
+  geom_vline(data=df %>% filter(data == "SWEA"), aes(xintercept=swea_rscu$rscu[swea_rscu$quantiles=="5%"]), linetype=2) +
+  geom_vline(data=df %>% filter(data == "SWEA"), aes(xintercept=swea_rscu$rscu[swea_rscu$quantiles=="95%"]), linetype=2) +
+  geom_vline(data=df %>% filter(data == "BRIDGES"), aes(xintercept=bridges_rscu$rscu[swea_rscu$quantiles=="5%"]), linetype=2) +
+  geom_vline(data=df %>% filter(data == "BRIDGES"), aes(xintercept=bridges_rscu$rscu[swea_rscu$quantiles=="95%"]), linetype=2) +
+  scale_fill_viridis_d()
+
+ggplot(df %>% filter(!is.na(rscu)),
+       aes(y=reorder(pathogenicity, rscu, mean), x=rscu, fill=pathogenicity, height=stat(count))) +
+  geom_density_ridges(stat="binline", scale=5) +
   plot_theme +
   labs(x="dRSCU", y="Clinical significance") +
   theme(legend.position = "none",
@@ -248,9 +279,14 @@ ggplot(df %>% filter(!is.na(rscu)),
   scale_fill_viridis_d()
 
 ggplot(df %>% filter(!is.na(rscu)), aes(x=rscu)) +
+  geom_histogram() +
+  facet_grid(pathogenicity~data)
+
+ggplot(df %>% filter(!is.na(rscu)), aes(x=rscu)) +
   geom_density() +
   facet_wrap("data") +
   plot_theme +
+  labs(x="dRSCU", y="Density") +
   theme(legend.position = "none",
         strip.background = element_blank(),
         strip.text=element_text(size=18, hjust=0)) +

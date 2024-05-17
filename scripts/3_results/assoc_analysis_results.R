@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggplot2)
 library(VennDiagram)
+library(stringi)
 
 setwd("~/Desktop/RESULTS/BRIDGES/association/basic_association/output")
 
@@ -87,6 +88,43 @@ u50_multi_fdg_no_path_recur_significant = u50_multi_fdg_no_path_recur %>% filter
 u50_multi_fdg_no_path_recur_significant = u50_multi_fdg_no_path_recur_significant %>% 
   dplyr::select(c(SNP, A1, A2, F_A, F_U, OR, UNADJ, FDR_BH)) %>% 
   left_join(synonymous_table, by=join_by(SNP==variant))
+
+col_vec = c("SNP", "gene", "known_variation","type", "OR", "FDR_BH", "AF", 
+            "EUR_AF", "Swe_AF", "rscu", "phyloP", "encode", "ESE", 
+            "ESS",  "pathogenicity", "clinvar_review_status", "n_cases", "n_controls")
+
+output_a1 = no_path_recur_significant %>% 
+  dplyr::select(all_of(col_vec)) %>% 
+  mutate(encode=stri_replace_all_regex(encode, "_[A-Za-z0-9]*:[-+]:[0-9.]*:[0-9.]*", "")) %>% 
+  mutate(encode=str_replace_all(encode, "&", " & ")) %>% 
+  mutate(known_variation=str_replace_all(known_variation, "&", " & ")) %>% 
+  mutate_at(col_vec, ~str_replace_all(., "_", " "))
+
+output_a2 = fdg_no_path_recur_significant %>% 
+  dplyr::select(all_of(col_vec)) %>% 
+  mutate(encode=stri_replace_all_regex(encode, "_[A-Za-z0-9]*:[-+]:[0-9.]*:[0-9.]*", "")) %>% 
+  mutate(encode=str_replace_all(encode, "&", " & ")) %>% 
+  mutate(known_variation=str_replace_all(known_variation, "&", " & ")) %>% 
+  mutate_at(col_vec, ~str_replace_all(., "_", " "))
+
+output_a3 = u50_fdg_no_path_recur_significant %>% 
+  dplyr::select(all_of(col_vec)) %>% 
+  mutate(encode=stri_replace_all_regex(encode, "_[A-Za-z0-9]*:[-+]:[0-9.]*:[0-9.]*", "")) %>% 
+  mutate(encode=str_replace_all(encode, "&", " & ")) %>% 
+  mutate(known_variation=str_replace_all(known_variation, "&", " & ")) %>% 
+  mutate_at(col_vec, ~str_replace_all(., "_", " "))
+
+output_a4 = u50_multi_fdg_no_path_recur_significant %>% 
+  dplyr::select(all_of(col_vec)) %>% 
+  mutate(encode=stri_replace_all_regex(encode, "_[A-Za-z0-9]*:[-+]:[0-9.]*:[0-9.]*", "")) %>% 
+  mutate(encode=str_replace_all(encode, "&", " & ")) %>% 
+  mutate(known_variation=str_replace_all(known_variation, "&", " & ")) %>% 
+  mutate_at(col_vec, ~str_replace_all(., "_", " "))
+
+write_tsv(output_a1, "~/Desktop/RESULTS/BRIDGES/association/basic_association/full_tables/no_path_recur_significant.tsv")
+write_tsv(output_a2, "~/Desktop/RESULTS/BRIDGES/association/basic_association/full_tables/fdg_no_path_recur_significant.tsv")
+write_tsv(output_a3, "~/Desktop/RESULTS/BRIDGES/association/basic_association/full_tables/u50_fdg_no_path_recur_significant.tsv")
+write_tsv(output_a4, "~/Desktop/RESULTS/BRIDGES/association/basic_association/full_tables/u50_multi_fdg_no_path_recur_significant.tsv")
 
 # 
 # variants = u50_multi_fdg_no_path_recur_significant %>%

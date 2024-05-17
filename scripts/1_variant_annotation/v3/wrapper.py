@@ -364,7 +364,17 @@ def run_pipeline(input_directory, output_directory, resources_directory, \
 
         prev_operation = "custom"
 
-def run(div_line, div_main, input_directory, output_directory, cores, quiet, cmd_process, cmd_string, args):
+def run(div_line, div_main, input_directory, output_directory, cores, quiet, cmd_process, pipeline_step, args):
+
+    command_dictionary = {"separate_var" : "bash {}/filtering.sh separateVariants {} {} {} {}",
+                          "filter_snp" : "bash {}/filtering.sh filterSNVs {} {} {} {}",
+                          "filter_indel" : "bash {}/filtering.sh filterIndels {} {} {} {}",
+                          "merge_var" : "bash {}/filtering.sh mergeVariants {} {} {} {}",
+                          "retrieve_fs" : "bash {}/flanking_sequences.sh {} {}",
+                          "annotate_vep" : "bash {}/vep_annotation.sh -i {} -o {} -r {}",
+                          "annotate_custom" : []}
+
+    cmd_string = command_dictionary[pipeline_step]
 
     if div_main:
         print("{s:=^{n}}".format(n=term_width, s=" {} ".format(div_line)))

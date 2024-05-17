@@ -55,7 +55,7 @@ do
     --check_existing \
     --custom ${resources_directory}/All_hg19_RS.bw,GERP,bigwig,exact \
     --custom ${resources_directory}/hg19.100way.phyloP100way.bw,PhyloP,bigwig,exact \
-    --fields "Gene","SYMBOL","Feature","Existing_variation","STRAND","EXON","INTRON","Consequence","Codons","AF","EUR_AF","SweGen_AF","gnomADe_AF","gnomADe_NFE_AF","PhyloP","GERP", \
+    --fields "Gene","SYMBOL","Feature","Existing_variation","STRAND","EXON","INTRON","Consequence","Codons","AF","EUR_AF","SweGen_AF","gnomADe_AF","gnomADe_NFE_AF","PhyloP","GERP" \
     --no_stats 1>>${output_directory}/3_BaseAnnotation/vep.log 2>>${output_directory}/3_BaseAnnotation/vep.error
 
     current_vcf=$(($current_vcf+1))
