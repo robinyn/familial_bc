@@ -32,10 +32,7 @@ docker pull robinyn/variant_annotation_pipeline_v3
 
 ```sh
 # Pull docker image from Docker Hub and build a container
-singularity build docker://robinyn/variant_annotation_pipelien_v3
-
-#
-singularity run
+singularity build docker://robinyn/variant_annotation_pipeline_v3
 ```
 
 ### Manual installation using Conda
@@ -58,8 +55,8 @@ mv homo_sapiens ./vep
 ### Using Docker
 
 ```sh
-# Compile the image into a container and attach the resources, input data, output directories as volumes
-docker run -v /resources/directory/on/host:/home/resources /input/data/directory/on/host:/home/data /output/directory/on/host:/home/output
+# Start a interactive shell within Docker container and attach the resources, input data, output directories as volumes
+docker run -v /resources/directory/on/host:/home/resources -v /input/data/directory/on/host:/home/data -v /output/directory/on/host:/home/output -it robinyn/variant_annotation_pipeline_v3
 
 # Activate the environment
 conda activate gatk-vep
@@ -71,8 +68,8 @@ python wrapper.py annotate -d /input/data/directory -r /resources/directory -o /
 ### Using Singularity
 
 ```sh
-#
-singularity run
+# Start a interactive shell within Singularity container and attach the resources, input data, output directories as volumes
+singularity shell --bind /resources/directory/on/host:/home/resources -bind /input/data/directory/on/host:/home/data -bind /output/directory/on/host:/home/output variant_annotation_pipeline_v3_latest.sif
 
 # Activate the environment
 conda activate gatk-vep
