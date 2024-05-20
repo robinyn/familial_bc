@@ -1,6 +1,6 @@
 # Variant Annotation Pipeline V3
 
-This is the most up-to-date version of the pipeline. Several features have been added including a setup script which will download all publically available resources required for the variant annotation, a Docker/Singularity image with all of the required dependencies and scripts, as well as ability to use multiple cores for parallel processing.
+This is the most up-to-date version of the pipeline. Several features have been added including a setup script which will download all publically available resources required for the variant annotation, a Docker/Singularity image with all of the required dependencies and scripts, as well as the ability to use multiple cores for parallel processing.
 
 ## Installation
 
