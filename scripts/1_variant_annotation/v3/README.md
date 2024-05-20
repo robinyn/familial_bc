@@ -32,7 +32,7 @@ docker pull robinyn/variant_annotation_pipeline_v3
 
 ```sh
 # Pull docker image from Docker Hub and build a container
-singularity build docker://robinyn/variant_annotation_pipeline_v3
+singularity pull docker://robinyn/variant_annotation_pipeline_v3
 ```
 
 ### Manual installation using Conda
