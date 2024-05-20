@@ -1,3 +1,7 @@
+## Title: benchmarking_plots.R
+## Author: Euisuk Robin Han
+## Description: A script to generate benchmarking result plots
+
 library(tidyverse)
 library(ggplot2)
 

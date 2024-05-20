@@ -1,6 +1,9 @@
+## Title: assoc_analysis_results.R
+## Author: Euisuk Robin Han
+## Description: A script for the analysis of results from the association analyses
+
 library(tidyverse)
 library(ggplot2)
-library(VennDiagram)
 
 setwd("~/Desktop/RESULTS/BRIDGES/association/basic_association/output")
 

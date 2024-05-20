@@ -1,0 +1,12 @@
+-filter QD<2.0
+--filter-name QD2S
+-filter MQ<40.0
+--filter-name MQ40
+-filter FS>60.0
+--filter-name FS60
+-filter SOR>4.0
+--filter-name SOR4
+-filter MQRankSum<-12.5
+--filter-name MQRS-12.5
+-filter ReadPosRankSum<-8.0
+--filter-name RPRS-8

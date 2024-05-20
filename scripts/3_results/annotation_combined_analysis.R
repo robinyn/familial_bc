@@ -1,10 +1,6 @@
-## Title: combined_analysis.R
+## Title: annotation_combined_analysis.R
 ## Author: Euisuk Robin Han
 ## Description: A script for the analysis of the annotated SWEA/BRIDGES data
-## Dependencies: Tested and stable with: 
-##                R version 4.2.3
-##                tidyverse (version 2.0.0)
-##                ggplot2 (version 3.4.4)
 
 library(tidyverse)
 library(ggplot2)

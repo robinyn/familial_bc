@@ -1,5 +1,8 @@
+## Title: summary_stats.R
+## Author: Euisuk Robin Han
+## Description: A script to generate the summary statistics from synonymous variant annotations
+
 library(tidyverse)
-library(UpSetR)
 
 setwd("~/Desktop/RESULTS")
 

@@ -1,3 +1,7 @@
+## Title: result_plots.R
+## Author: Euisuk Robin Han
+## Description: A script to generate the result plots in the thesis report
+
 library(tidyverse)
 library(ggplot2)
 library(FSA)
@@ -213,12 +217,6 @@ ggplot(df %>%
         strip.background = element_blank(),
         strip.text=element_text(size=18, hjust=0)) +
   facet_wrap("data")
-
-kruskal.test()
-
-# t.test(variants_final$phyloP[variants_final$pathogenicity=="Unreported"], 
-#        variants_final$phyloP[variants_final$pathogenicity=="Other"])
-
 
 ######################### RSCU - ClinVar #########################
 

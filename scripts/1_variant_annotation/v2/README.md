@@ -4,6 +4,11 @@
 ### Software installation
 A conda environment can be created using the provided [YAML file](/gatk-vep.yaml) to install all the required softwares and dependencies for the pipeline.
 
+```sh
+# Create Conda environment
+conda env create -f gatk-vep.yaml
+```
+
 If the conda environment fails to resolve, the required dependencies must be installed manually. The installation and setup instructions are almost identical to the original version of the [pipeline](https://github.com/aboffelli/variant_annotation).
 
 #### Genome Analysis Toolkit (GATK)
@@ -137,6 +142,10 @@ The SweGen resources are not publically available and were retrieved from local 
 The pipeline can now be run using the wrapper script.
 
 ```sh
+# Activate Conda environment if installed using Conda
+conda activate gatk-vep
+
+# Run the wrapper script
 bash scripts/pipeline.sh -d input/data -s resources/directory -f start_flag -t data/type -o output/directory
 ```
 * Start flag determines which step of the pipeline the wrapper will start from:
@@ -197,5 +206,18 @@ The results from the association analyses were then read into R using [assoc_ana
 
 ### Summary statistics and plotting
 All of the summary statistics and plots found in the report can be generating using the following scripts:
+
 * [summary_stats.R](../../3_results/summary_stats.R)
 * [result_plots.R](../../3_results/result_plots.R)
+
+The following R packages are required for the provided R scripts to function properly:
+
+* tidyverse
+* ggplot2
+* FSA
+* tidytext
+* ggh4x
+* ggridges
+* org.Hs.eg.db
+* DBI
+* forcats

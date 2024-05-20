@@ -1,18 +1,17 @@
 ## Title: association_analysis.R
 ## Author: Euisuk Robin Han
 ## Description: A script for the case-control association analysis of BRIDGES data 
-## Dependencies: Tested and stable with: 
-##                R version 4.2.3
-##                tidyverse (version 2.0.0)
 
 library(tidyverse)
 
 # Set working directory
 setwd("~/Desktop/RESULTS/BRIDGES/")
 
+# Read list of synonymous variants from BRIDGES
 variants = read_tsv("~/Desktop/RESULTS/BRIDGES/bridges_synonymous_list.tsv") %>% 
   mutate(variant=str_remove(variant, "chr"))
 
+# Read list of pathogenic variants from BRIDGES
 pathogenic_variants = read_tsv("~/Desktop/RESULTS/BRIDGES/bridges_pathogenic_list.tsv") %>% 
   mutate(variant=str_remove(variant, "chr"))
 

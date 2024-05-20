@@ -91,10 +91,21 @@ def init_args():
             if not cont:
                 exit()
 
-            shutil.rmtree(args.output_directory)
-            os.mkdir(args.output_directory)
+            list_of_dir = []
 
-        os.mkdir(args.output_directory)
+            for file in glob.glob("{}/**".format(args.output_directory), recursive=True):
+                if os.path.isdir(file):
+                    list_of_dir.append(file)
+                else:
+                    os.remove(file)
+
+            list_of_dir.pop(0)
+
+            for directory in reversed(list_of_dir):
+                os.rmdir(directory)
+
+        else:
+            os.mkdir(args.output_directory)
 
     elif args.command == "setup":
 
