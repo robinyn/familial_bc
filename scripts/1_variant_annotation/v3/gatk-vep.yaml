@@ -11,7 +11,7 @@ dependencies:
   - perl-vcftools-vcf
   - samtools
   - screen
-  - ensembl-vep=110
+  - ensembl-vep=111
   - gatk4=4.5.0.0
   - mysql
   - plink=1.90
