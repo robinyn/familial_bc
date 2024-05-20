@@ -235,13 +235,6 @@ if(data_type=="swea"){
     mutate(rank=ESS_ESE_rank+known_rank+rscu_rank+AF_rank+splice_region_rank+RBS_rank+phyloP_rank+(clinvar_rank*clinvar_review_score)+risk_gene_rank+with_pathogenic) %>% 
     arrange(desc(pathogenicity), rank)
   
-  # Remove problematic variant -> custom annotation scripts cannot handle multiple alternate alleles at one location
-  # only one such synonymous variant was found in the SWEA data, none in the BRIDGES data.
-  # synonymous_variants_final = synonymous_variants_final %>%
-  #   filter(!(variant=="6-35423662-A-C,T" & codon=="ccA/ccC"))
-  # 
-  # synonymous_variants_final$variant[synonymous_variants_final$variant=="6-35423662-A-C,T"]="6-35423662-A-T"
-  
   # Export list of variatns as TSV file
   # write_tsv(synonymous_variants_final, file="swea_synonymous_list.tsv")
   # write_tsv(pathogenic_BOC_variants, file="swea_pathogenic_list.tsv")

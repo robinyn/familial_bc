@@ -2,7 +2,10 @@ mkdir ./EncodeFiles
 
 cd /home/resources
 
+## PhyloP
 wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/phyloP100way/hg19.100way.phyloP100way.bw
+
+## GERP
 wget https://hgdownload.soe.ucsc.edu/gbdb/hg19/bbi/All_hg19_RS.bw
 
 cd /home/resources/EncodeFiles

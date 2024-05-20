@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 function progressBar {
     let _current_progress=(${1}*100/${2}*100)/100

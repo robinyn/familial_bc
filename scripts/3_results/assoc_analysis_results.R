@@ -14,22 +14,6 @@ case_phenotypes = read_tsv("../../../bridges_annotation/cases_phenotypes.txt") %
 synonymous_table = read_tsv("~/Desktop/thesis/bridges_results/bridges_synonymous_list.tsv") %>% 
   mutate(variant = str_remove(variant, "chr"))
 
-# # TEST
-# a1 = read_tsv("../../input/output_reformatted.txt")
-# a2 = read_tsv("../../input/output_reformatted_adjusted.txt")
-# 
-# TEST = a1 %>% 
-#   filter(TEST=="ADD") %>% 
-#   merge(a2 %>% dplyr::select(-1), by = "SNP")
-# 
-# TEST_sig = TEST %>% filter(FDR_BH<0.05 | FDR_BH=='Inf')
-# 
-# TEST_sig = TEST_sig %>% 
-#   dplyr::select(c(SNP, A1, OR, UNADJ, FDR_BH)) %>% 
-#   left_join(synonymous_table, by=join_by(SNP==variant))
-# 
-# #######################################################
-
 # General breast cancer risk - No subsetting for fam hist
 a1 = read_tsv("no_pathogenic_reccurent.tsv")
 a2 = read_tsv("no_pathogenic_reccurent_adjusted.tsv")
