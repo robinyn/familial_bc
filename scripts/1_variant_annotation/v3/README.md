@@ -24,7 +24,7 @@ mv indel_filters.txt /directory/for/resources/files
 ### Using Docker
 
 ```sh
-# Pull docker image from Docker Hub
+# Pull docker image from Docker Hub and build a container
 docker pull robinyn/variant_annotation_pipeline_v3
 ```
 
@@ -55,7 +55,7 @@ mv homo_sapiens ./vep
 ### Using Docker
 
 ```sh
-# Start a interactive shell within Docker container and attach the resources, input data, output directories as volumes
+# Start an interactive shell within Docker container and attach the resources, input data, output directories as volumes
 docker run -v /resources/directory/on/host:/home/resources -v /input/data/directory/on/host:/home/data -v /output/directory/on/host:/home/output -it robinyn/variant_annotation_pipeline_v3
 
 # Activate the environment
@@ -68,7 +68,7 @@ python wrapper.py annotate -d /input/data/directory -r /resources/directory -o /
 ### Using Singularity
 
 ```sh
-# Start a interactive shell within Singularity container and attach the resources, input data, output directories as volumes
+# Start an interactive shell within Singularity container and attach the resources, input data, output directories as volumes
 singularity shell --bind /resources/directory/on/host:/home/resources -bind /input/data/directory/on/host:/home/data -bind /output/directory/on/host:/home/output variant_annotation_pipeline_v3_latest.sif
 
 # Activate the environment
